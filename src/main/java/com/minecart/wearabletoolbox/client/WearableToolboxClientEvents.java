@@ -10,7 +10,7 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 /**
- * 客户端按键处理：按“打开工具箱”键时请求服务端打开 Curios 槽位中的工具箱。
+ * 客户端按键处理：按“打开工具箱”键时请求服务端打开胸甲栏中的工具箱。
  */
 @EventBusSubscriber(modid = WearableToolbox.MODID, bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)
 public final class WearableToolboxClientEvents {

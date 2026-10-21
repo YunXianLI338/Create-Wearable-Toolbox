@@ -1,6 +1,6 @@
 package com.minecart.wearabletoolbox;
 
-import com.minecart.wearabletoolbox.common.WearableToolboxMenu;
+import com.minecart.wearabletoolbox.common.ToolboxItems;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -17,7 +17,7 @@ public final class WearableToolboxEvents {
 
     @SubscribeEvent
     public static void onItemTooltip(ItemTooltipEvent event) {
-        if (WearableToolboxMenu.isToolbox(event.getItemStack())) {
+        if (ToolboxItems.isToolbox(event.getItemStack())) {
             event.getToolTip().add(Component.translatable("tooltip.wearable_toolbox.equip")
                     .withStyle(ChatFormatting.GRAY));
             event.getToolTip().add(Component.translatable("tooltip.wearable_toolbox.open")

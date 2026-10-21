@@ -1,7 +1,6 @@
 {
   "key.categories.wearable_toolbox": "可穿戴的工具箱",
   "key.wearable_toolbox.open": "打开工具箱",
-  "curios.identifier.toolbox": "工具箱",
-  "tooltip.wearable_toolbox.equip": "可放入“工具箱”饰品栏",
+  "tooltip.wearable_toolbox.equip": "可装备在胸甲栏",
   "tooltip.wearable_toolbox.open": "按 V 键打开"
 }

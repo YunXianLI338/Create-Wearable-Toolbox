@@ -14,8 +14,6 @@ repositories {
     // 机械动力及其 Ponder / Flywheel / Registrate
     maven { url = "https://maven.createmod.net" }
     maven { url = "https://maven.ithundxr.dev/snapshots" }
-    // Curios API
-    maven { url = "https://maven.theillusivec4.top/" }
     maven { url = "https://maven.parchmentmc.org" }
     mavenCentral()
 }
@@ -76,9 +74,6 @@ dependencies {
     compileOnly "dev.engine-room.flywheel:flywheel-neoforge-api-${minecraft_version}:${flywheel_version}"
     runtimeOnly "dev.engine-room.flywheel:flywheel-neoforge-${minecraft_version}:${flywheel_version}"
     implementation "com.tterrag.registrate:Registrate:${registrate_version}"
-
-    // Curios API（前置）：编译用 api 构件，运行时由 run/mods 或玩家安装的完整模组提供。
-    compileOnly "top.theillusivec4.curios:curios-neoforge:${curios_version}+${minecraft_version}:api"
 }
 
 // 只在 neoforge.mods.toml 上做占位符展开，其它资源文件原样复制。

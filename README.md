@@ -2,7 +2,7 @@
 
 **Minecraft 1.21.1 · NeoForge · MIT**
 
-把机械动力的工具箱放进 Curios 的“工具箱”饰品栏，按 `V` 即可打开与放置版相同的 8 隔间界面。
+把机械动力的工具箱装备到胸甲栏，按 `V` 即可打开与放置版相同的 8 隔间界面。Curios 为可选前置，不安装也能运行。
 
 ---
 
@@ -17,17 +17,17 @@
 | Java | 21 |
 | Parchment | 2024.11.17 |
 | 机械动力 Create | 6.0.10（`[6.0.10,)`） |
-| Curios API | 9.2.2+1.21.1（`[9.2.2,)`） |
+| Curios API | 9.2.2+1.21.1（可选，不安装也能运行） |
 
 ### 前置模组
 
-- **机械动力 Create 6.0.10**：编译期依赖 `com.simibubi.create:create-1.21.1:6.0.10-280`，其 jarjar 已内置 Ponder、Flywheel、Registrate。
-- **Curios API 9.2.2+1.21.1**：编译期使用 `:api` 构件；运行时需要完整模组。
-- 本地开发环境 `run/mods` 已放入 `create-1.21.1-6.0.10.jar` 与 `curios-neoforge-9.5.1+1.21.1.jar`；正式发布后玩家需自行安装这两个前置。
+- **机械动力 Create 6.0.10（必需）**：编译期依赖 `com.simibubi.create:create-1.21.1:6.0.10-280`，其 jarjar 已内置 Ponder、Flywheel、Registrate。
+- **Curios API 9.2.2+1.21.1（可选）**：本模组不使用 Curios 槽位，也不调用 Curios API；仅将其声明为 `optional`，安装与否都不影响装备和打开工具箱。
+- 本地开发环境 `run/mods` 保留了 `create-1.21.1-6.0.10.jar` 与 `curios-neoforge-9.5.1+1.21.1.jar`，后者仅用于测试与其他模组的兼容性。
 
 ## 玩法
 
-1. 把任意颜色的 Create 工具箱放进 Curios 的 **工具箱** 饰品栏（共 1 格，接受 `#create:toolboxes`）。
+1. 把任意颜色的 Create 工具箱放进原版 **胸甲栏**。
 2. 按 `V`（可在“选项 → 控制”中修改）打开界面。
 3. 界面与放置版工具箱一致：8 个隔间、每格 4 槽、过滤器、快速移动与堆叠整理；关闭时内容写回物品。
 
@@ -63,11 +63,12 @@ wearable_toolbox/
 │  ├─ WearableToolbox.java          # @Mod 主类、菜单与网络注册
 │  ├─ WearableToolboxEvents.java    # 服务端事件
 │  ├─ client/                       # 按键、屏幕与客户端事件
-│  └─ common/                       # 菜单、打开数据包
+│  ├─ common/                       # 菜单、打开数据包、工具箱判定
+│  └─ mixin/                        # 放开胸甲栏对工具箱的限制
 ├─ src/main/resources/
 │  ├─ META-INF/neoforge.mods.toml   # 1.21.1 形态（含 modLoader / loaderVersion）
-│  ├─ assets/wearable_toolbox/      # 语言文件
-│  └─ data/                         # Curios 槽位、实体与物品标签
+│  ├─ wearable_toolbox.mixins.json  # Mixin 配置
+│  └─ assets/wearable_toolbox/      # 语言文件
 ├─ src/generated/resources/         # runData 输出（构建时生成）
 ├─ LICENSE                          # MIT
 └─ README.md
@@ -77,7 +78,7 @@ wearable_toolbox/
 
 - `mod_id` 为 `wearable_toolbox`，同时出现在 `gradle.properties`、`@Mod` 注解与 `neoforge.mods.toml` 三处，改动时必须同步。
 - 1.21.1 的 `neoforge.mods.toml` **必须**保留 `modLoader="javafml"` 与 `loaderVersion`，否则客户端会以 `Missing ModLoader` 拒载。
-- 前置依赖在 `neoforge.mods.toml` 的 `[[dependencies.wearable_toolbox]]` 中声明：`create [6.0.10,)`、`curios [9.2.2,)`，均为 `required` 且 `ordering="AFTER"`。
+- 前置依赖在 `neoforge.mods.toml` 的 `[[dependencies.wearable_toolbox]]` 中声明：`create [6.0.10,)` 为 `required`，`curios [9.2.2,)` 为 `optional`，均 `ordering="AFTER"`。
 - 许可证为 MIT，作者 YunXian_LI。
 
 ## 作者与许可

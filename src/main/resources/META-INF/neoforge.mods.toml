@@ -12,6 +12,9 @@ displayName="${mod_name}"
 authors="${mod_authors}"
 description="${mod_description}"
 
+[[mixins]]
+config="wearable_toolbox.mixins.json"
+
 [[dependencies.${mod_id}]]
 modId="neoforge"
 type="required"
@@ -34,10 +37,10 @@ versionRange="[6.0.10,)"
 ordering="AFTER"
 side="BOTH"
 
-# 前置：Curios API
+# 可选前置：Curios API。本模组已改用原版胸甲栏，不安装 Curios 也能运行。
 [[dependencies.${mod_id}]]
 modId="curios"
-type="required"
+type="optional"
 versionRange="[9.2.2,)"
 ordering="AFTER"
 side="BOTH"
