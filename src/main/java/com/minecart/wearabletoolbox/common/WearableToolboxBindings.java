@@ -2,6 +2,7 @@ package com.minecart.wearabletoolbox.common;
 
 import com.minecart.wearabletoolbox.mixin.ToolboxInventoryAccess;
 import com.simibubi.create.AllDataComponents;
+import com.simibubi.create.content.equipment.toolbox.ToolboxHandler;
 import com.simibubi.create.content.equipment.toolbox.ToolboxInventory;
 import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
@@ -88,6 +89,8 @@ public final class WearableToolboxBindings {
         entry.putInt(SLOT_KEY, compartment);
         root.put(String.valueOf(hotbarSlot), entry);
         saveRoot(player, root);
+        // 快捷栏边框由客户端读取持久化数据绘制，绑定变化后立即同步。
+        ToolboxHandler.syncData(player);
 
         player.setItemSlot(EquipmentSlot.CHEST, chest);
         player.displayClientMessage(
@@ -135,6 +138,7 @@ public final class WearableToolboxBindings {
         }
 
         saveRoot(player, root);
+        ToolboxHandler.syncData(player);
         player.displayClientMessage(
                 Component.translatable("message.wearable_toolbox.unbound").withStyle(ChatFormatting.GRAY),
                 true
@@ -153,6 +157,7 @@ public final class WearableToolboxBindings {
         ItemStack chest = player.getItemBySlot(EquipmentSlot.CHEST);
         if (!ToolboxItems.isToolbox(chest)) {
             player.getPersistentData().remove(DATA_KEY);
+            ToolboxHandler.syncData(player);
             return;
         }
 
@@ -160,6 +165,7 @@ public final class WearableToolboxBindings {
         if (id == null || !id.equals(root.getUUID(TOOLBOX_KEY))) {
             // 胸甲栏换成了另一个工具箱（或物品丢失了 UUID），旧绑定失效。
             player.getPersistentData().remove(DATA_KEY);
+            ToolboxHandler.syncData(player);
             return;
         }
 
@@ -227,6 +233,7 @@ public final class WearableToolboxBindings {
 
         if (rootChanged) {
             saveRoot(player, root);
+            ToolboxHandler.syncData(player);
         }
         if (inventoryChanged) {
             ItemStack updated = chest.copy();
