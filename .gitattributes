@@ -1,0 +1,6 @@
+# 统一换行：仓库内保存 LF，Windows 检出时由 Git 处理
+* text=auto
+
+# Gradle wrapper 在 Unix 上必须保持 LF
+gradlew text eol=lf
+gradlew.bat text eol=crlf
