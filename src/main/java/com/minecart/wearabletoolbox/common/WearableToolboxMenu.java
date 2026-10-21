@@ -58,7 +58,7 @@ public class WearableToolboxMenu extends ToolboxMenu {
         return createVirtualBlockEntity(stack, Minecraft.getInstance().player);
     }
 
-    private static ToolboxBlockEntity createVirtualBlockEntity(ItemStack stack, Player player) {
+    public static ToolboxBlockEntity createVirtualBlockEntity(ItemStack stack, Player player) {
         Block block = ToolboxItems.isToolbox(stack)
                 ? ((BlockItem) stack.getItem()).getBlock()
                 : AllBlocks.TOOLBOXES.get(DyeColor.BROWN).get();

@@ -1,6 +1,7 @@
 package com.minecart.wearabletoolbox;
 
 import com.minecart.wearabletoolbox.common.OpenToolboxPayload;
+import com.minecart.wearabletoolbox.common.WearableToolboxBindPayload;
 import com.minecart.wearabletoolbox.common.WearableToolboxMenu;
 import com.mojang.logging.LogUtils;
 import net.minecraft.core.registries.Registries;
@@ -51,6 +52,12 @@ public class WearableToolbox {
                 OpenToolboxPayload.TYPE,
                 OpenToolboxPayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> OpenToolboxPayload.handle(context.player()))
+        );
+        registrar.playToServer(
+                WearableToolboxBindPayload.TYPE,
+                WearableToolboxBindPayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(
+                        () -> WearableToolboxBindPayload.handle(context.player(), payload))
         );
     }
 }

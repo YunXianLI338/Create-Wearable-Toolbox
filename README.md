@@ -2,7 +2,7 @@
 
 **Minecraft 1.21.1 · NeoForge · MIT**
 
-把机械动力的工具箱装备到胸甲栏，按 `V` 即可打开与放置版相同的 8 隔间界面。Curios 为可选前置，不安装也能运行。
+把机械动力的工具箱装备到胸甲栏：按 `V` 打开 8 隔间界面，或按住 `Alt` 打开与放置版一致的径向菜单，把隔间绑定到快捷栏并自动补充。Curios 为可选前置，不安装也能运行。
 
 ---
 
@@ -28,10 +28,14 @@
 ## 玩法
 
 1. 把任意颜色的 Create 工具箱放进原版 **胸甲栏**。
-2. 按 `V`（可在“选项 → 控制”中修改）打开界面。
-3. 界面与放置版工具箱一致：8 个隔间、每格 4 槽、过滤器、快速移动与堆叠整理；关闭时内容写回物品。
+2. 按住 `Alt`（Create 的“工具箱”键，默认左 Alt，可在“选项 → 控制”中修改）打开径向菜单：
+   - 把鼠标移到某个有物品的隔间上松开，或按对应数字键，即可把该隔间绑定到当前快捷栏。
+   - 中间的槽位用于解除当前快捷栏的绑定。
+   - 快捷栏物品不足时自动从隔间补充，超过半组时自动存回；换握其他物品或清空隔间会自动解绑。
+3. 按 `V`（可修改）打开完整界面：8 个隔间、每格 4 槽、过滤器、快速移动与堆叠整理；关闭时内容写回物品。
+4. 附近有放置版工具箱时，`Alt` 仍优先交给 Create 原逻辑，不会同时弹出两个界面。
 
-内容保存在物品的 `create:toolbox_inventory` 组件中，掉落后不会丢失。当前版本尚未实现放置版的热键绑定与快捷栏自动补充，取用工具需在界面中手动整理。
+内容保存在物品的 `create:toolbox_inventory` 组件中，掉落后不会丢失。绑定数据保存在玩家的 `WearableToolboxData` 持久化 NBT 中，换下工具箱或隔间清空时自动解除。
 
 ## 构建与运行
 
@@ -61,10 +65,11 @@ wearable_toolbox/
 ├─ settings.gradle                  # 插件仓库与根项目名
 ├─ src/main/java/com/minecart/wearabletoolbox/
 │  ├─ WearableToolbox.java          # @Mod 主类、菜单与网络注册
-│  ├─ WearableToolboxEvents.java    # 服务端事件
-│  ├─ client/                       # 按键、屏幕与客户端事件
-│  ├─ common/                       # 菜单、打开数据包、工具箱判定
-│  └─ mixin/                        # 放开胸甲栏对工具箱的限制
+│  ├─ WearableToolboxEvents.java    # 物品提示
+│  ├─ WearableToolboxServerEvents.java # 快捷栏绑定/自动补充 tick
+│  ├─ client/                       # 按键、界面、径向菜单与客户端事件
+│  ├─ common/                       # 菜单、网络包、绑定数据、工具箱判定
+│  └─ mixin/                        # 胸甲栏限制、Create 库存/径向菜单访问器
 ├─ src/main/resources/
 │  ├─ META-INF/neoforge.mods.toml   # 1.21.1 形态（含 modLoader / loaderVersion）
 │  ├─ wearable_toolbox.mixins.json  # Mixin 配置
