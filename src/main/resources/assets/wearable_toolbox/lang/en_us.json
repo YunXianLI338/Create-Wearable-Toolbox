@@ -1,0 +1,7 @@
+{
+  "key.categories.wearable_toolbox": "Wearable Toolbox",
+  "key.wearable_toolbox.open": "Open Toolbox",
+  "curios.identifier.toolbox": "Toolbox",
+  "tooltip.wearable_toolbox.equip": "Can be equipped in the Toolbox curio slot",
+  "tooltip.wearable_toolbox.open": "Press V to open"
+}

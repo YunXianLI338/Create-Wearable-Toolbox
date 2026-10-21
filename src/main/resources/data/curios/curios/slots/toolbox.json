@@ -1,0 +1,9 @@
+{
+  "order": 200,
+  "size": 1,
+  "icon": "create:block/toolbox/brown",
+  "validators": ["curios:tag"],
+  "add_cosmetic": false,
+  "render_toggle": false,
+  "use_native_gui": true
+}

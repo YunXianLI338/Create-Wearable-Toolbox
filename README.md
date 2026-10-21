@@ -2,7 +2,7 @@
 
 **Minecraft 1.21.1 · NeoForge · MIT**
 
-一个把工具箱穿在身上的 NeoForge 模组。当前仓库是项目骨架：构建、加载与元数据已经就绪，玩法内容尚未加入。
+把机械动力的工具箱放进 Curios 的“工具箱”饰品栏，按 `V` 即可打开与放置版相同的 8 隔间界面。
 
 ---
 
@@ -24,6 +24,14 @@
 - **机械动力 Create 6.0.10**：编译期依赖 `com.simibubi.create:create-1.21.1:6.0.10-280`，其 jarjar 已内置 Ponder、Flywheel、Registrate。
 - **Curios API 9.2.2+1.21.1**：编译期使用 `:api` 构件；运行时需要完整模组。
 - 本地开发环境 `run/mods` 已放入 `create-1.21.1-6.0.10.jar` 与 `curios-neoforge-9.5.1+1.21.1.jar`；正式发布后玩家需自行安装这两个前置。
+
+## 玩法
+
+1. 把任意颜色的 Create 工具箱放进 Curios 的 **工具箱** 饰品栏（共 1 格，接受 `#create:toolboxes`）。
+2. 按 `V`（可在“选项 → 控制”中修改）打开界面。
+3. 界面与放置版工具箱一致：8 个隔间、每格 4 槽、过滤器、快速移动与堆叠整理；关闭时内容写回物品。
+
+内容保存在物品的 `create:toolbox_inventory` 组件中，掉落后不会丢失。当前版本尚未实现放置版的热键绑定与快捷栏自动补充，取用工具需在界面中手动整理。
 
 ## 构建与运行
 
@@ -52,9 +60,14 @@ wearable_toolbox/
 ├─ gradle.properties                # MC/NeoForge/Parchment 版本与模组元数据
 ├─ settings.gradle                  # 插件仓库与根项目名
 ├─ src/main/java/com/minecart/wearabletoolbox/
-│  └─ WearableToolbox.java          # @Mod 主类
-├─ src/main/resources/META-INF/
-│  └─ neoforge.mods.toml            # 1.21.1 形态（含 modLoader / loaderVersion）
+│  ├─ WearableToolbox.java          # @Mod 主类、菜单与网络注册
+│  ├─ WearableToolboxEvents.java    # 服务端事件
+│  ├─ client/                       # 按键、屏幕与客户端事件
+│  └─ common/                       # 菜单、打开数据包
+├─ src/main/resources/
+│  ├─ META-INF/neoforge.mods.toml   # 1.21.1 形态（含 modLoader / loaderVersion）
+│  ├─ assets/wearable_toolbox/      # 语言文件
+│  └─ data/                         # Curios 槽位、实体与物品标签
 ├─ src/generated/resources/         # runData 输出（构建时生成）
 ├─ LICENSE                          # MIT
 └─ README.md
