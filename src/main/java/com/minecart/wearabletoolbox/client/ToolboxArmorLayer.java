@@ -49,11 +49,23 @@ public final class ToolboxArmorLayer extends RenderLayer<AbstractClientPlayer, P
      * 实体渲染的 Y 轴向下，所以“上移”要在基础值上减；Z 轴 180° 保持模型正向，
      * 去掉 Y 轴 180° 后箱体朝前，模型自带的挎带从身体两侧绕向背后。
      */
+
+    /** 模型包围盒下沿的 Y 坐标。0.50 是基础高度；实体 Y 轴向下，减去 9/16 格等于视觉上移 9 像素。 */
     private static final float FRONT_Y = 0.50F - 9.0F / 16.0F;
+
+    /** 模型中心的 Z 坐标。负 Z 是玩家前方，-0.10 表示把箱体往胸前推 0.10 格，避免埋进身体。 */
     private static final float FRONT_Z = -0.10F;
-    private static final float SCALE = 0.77F;
+
+    /** 整体缩放。0.5 表示缩到原始方块模型的一半，模型实际高度为 MODEL_HEIGHT × 0.5。 */
+    private static final float SCALE = 0.5F;
+
+    /** 模型原始坐标的 X 中心（8/16 格）。缩放后先减去它，才能让模型左右居中对齐玩家身体。 */
     private static final float CENTER_X = 0.50F;
+
+    /** 模型原始坐标的 Z 中心（11/16 格）。缩放后先减去它，让箱体深度以自身中心为基准摆放。 */
     private static final float CENTER_Z = 0.6875F;
+
+    /** 模型原始高度：JSON 中 y=0 到 y=23，共 23/16 格；用于垂直居中并计算 halfHeight。 */
     private static final float MODEL_HEIGHT = 23.0F / 16.0F;
 
     private static List<BakedQuad> quads;
