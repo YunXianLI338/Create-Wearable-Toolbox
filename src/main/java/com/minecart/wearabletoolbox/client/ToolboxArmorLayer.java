@@ -68,9 +68,9 @@ public final class ToolboxArmorLayer extends RenderLayer<AbstractClientPlayer, P
     /** 模型原始高度：JSON 中 y=0 到 y=23，共 23/16 格。 */
     private static final float MODEL_HEIGHT = 23.0F / 16.0F;
 
-    /** 盔甲架专用偏移：相对玩家模型上移 3 像素、左移 6 像素。 */
-    private static final float ARMOR_STAND_OFFSET_X = 6.0F / 16.0F;
-    private static final float ARMOR_STAND_OFFSET_Y = -3.0F / 16.0F;
+    /** 盔甲架专用偏移：实测其 body 坐标 X 负方向为左、Y 正方向为上，故左移取 -6/16、上移取 +3/16。 */
+    private static final float ARMOR_STAND_OFFSET_X = -6.0F / 16.0F;
+    private static final float ARMOR_STAND_OFFSET_Y = 3.0F / 16.0F;
 
     private static List<BakedQuad> quads;
     private static List<BakedQuad> openQuads;
