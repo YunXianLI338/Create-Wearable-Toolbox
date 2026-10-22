@@ -134,7 +134,8 @@ public final class WearableToolboxClientEvents {
                 event.getMultiBufferSource(),
                 event.getPackedLight(),
                 renderer.getModel().body,
-                false
+                false,
+                true
         );
     }
 }

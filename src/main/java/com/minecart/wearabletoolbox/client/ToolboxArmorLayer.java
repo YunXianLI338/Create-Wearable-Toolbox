@@ -87,14 +87,18 @@ public final class ToolboxArmorLayer extends RenderLayer<AbstractClientPlayer, P
         }
 
         boolean open = isToolboxOpen(player);
-        renderModel(poseStack, buffer, packedLight, getParentModel().body, open);
+        renderModel(poseStack, buffer, packedLight, getParentModel().body, open, false);
     }
 
     /**
      * 把工具箱模型挂到任意 HumanoidModel 的 body 上；玩家与盔甲架共用。
+     *
+     * @param open         是否使用打开盖子的模型
+     * @param flipVertical 是否再绕模型中心上下翻转；盔甲架的 body 坐标系与玩家不同，需要翻转
      */
     public static void renderModel(PoseStack poseStack, MultiBufferSource buffer, int packedLight,
-                                   net.minecraft.client.model.geom.ModelPart body, boolean open) {
+                                   net.minecraft.client.model.geom.ModelPart body, boolean open,
+                                   boolean flipVertical) {
         List<BakedQuad> modelQuads = getQuads(open);
         if (modelQuads.isEmpty()) {
             return;
@@ -107,6 +111,10 @@ public final class ToolboxArmorLayer extends RenderLayer<AbstractClientPlayer, P
         poseStack.mulPose(Axis.ZP.rotationDegrees(180.0F));
         poseStack.scale(SCALE, SCALE, SCALE);
         poseStack.translate(-CENTER_X, -MODEL_HEIGHT / 2.0F, -CENTER_Z);
+        if (flipVertical) {
+            // 此时原点已经在模型中心，再转 180° 只改变上下/左右朝向，不会把模型甩到别处。
+            poseStack.mulPose(Axis.ZP.rotationDegrees(180.0F));
+        }
 
         VertexConsumer consumer = buffer.getBuffer(RenderType.entityCutoutNoCull(TextureAtlas.LOCATION_BLOCKS));
         PoseStack.Pose pose = poseStack.last();
