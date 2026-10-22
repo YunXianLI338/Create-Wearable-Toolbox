@@ -46,13 +46,14 @@ public final class ToolboxArmorLayer extends RenderLayer<AbstractClientPlayer, P
 
     /**
      * 模型在玩家背部的摆放参数。模型坐标 16 单位 = 1 格。
-     * 先平移到背部，再绕 Y 轴转 180°，缩放后把模型 X/Z 中心移到原点。
+     * 先移到背部中心，绕 Y 轴转 180° 面向外，再绕 Z 轴转 180° 上下翻转，最后按中心缩放。
      */
     private static final float BACK_Y = 0.50F;
     private static final float BACK_Z = 0.45F;
-    private static final float SCALE = 0.55F;
+    private static final float SCALE = 0.77F;
     private static final float CENTER_X = 0.50F;
     private static final float CENTER_Z = 0.6875F;
+    private static final float MODEL_HEIGHT = 23.0F / 16.0F;
 
     private static List<BakedQuad> quads;
     private static boolean loadFailed;
@@ -77,10 +78,12 @@ public final class ToolboxArmorLayer extends RenderLayer<AbstractClientPlayer, P
 
         poseStack.pushPose();
         getParentModel().body.translateAndRotate(poseStack);
-        poseStack.translate(0.0F, BACK_Y, BACK_Z);
+        float halfHeight = MODEL_HEIGHT * SCALE / 2.0F;
+        poseStack.translate(0.0F, BACK_Y + halfHeight, BACK_Z);
         poseStack.mulPose(Axis.YP.rotationDegrees(180.0F));
+        poseStack.mulPose(Axis.ZP.rotationDegrees(180.0F));
         poseStack.scale(SCALE, SCALE, SCALE);
-        poseStack.translate(-CENTER_X, 0.0F, -CENTER_Z);
+        poseStack.translate(-CENTER_X, -MODEL_HEIGHT / 2.0F, -CENTER_Z);
 
         VertexConsumer consumer = buffer.getBuffer(RenderType.entityCutoutNoCull(TextureAtlas.LOCATION_BLOCKS));
         PoseStack.Pose pose = poseStack.last();
