@@ -9,7 +9,8 @@
     "ToolboxInventoryAccess"
   ],
   "client": [
-    "RadialToolboxMenuAccess"
+    "RadialToolboxMenuAccess",
+    "ToolboxHandlerClientMixin"
   ],
   "injectors": {
     "defaultRequire": 1

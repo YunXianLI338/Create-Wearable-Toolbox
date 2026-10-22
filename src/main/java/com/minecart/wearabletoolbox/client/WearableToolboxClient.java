@@ -1,7 +1,8 @@
 package com.minecart.wearabletoolbox.client;
 
 import com.minecart.wearabletoolbox.WearableToolbox;
-import com.minecart.wearabletoolbox.common.ToolboxItems;
+import com.minecart.wearabletoolbox.common.DepositAllPayload;
+import com.minecart.wearabletoolbox.common.EquippedToolbox;
 import com.minecart.wearabletoolbox.common.WearableToolboxBindings;
 import com.minecart.wearabletoolbox.common.WearableToolboxMenu;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -19,7 +20,6 @@ import net.minecraft.client.resources.PlayerSkin;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.level.GameType;
 import net.neoforged.api.distmarker.Dist;
@@ -30,6 +30,7 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
+import net.neoforged.neoforge.network.PacketDistributor;
 import org.lwjgl.glfw.GLFW;
 
 /**
@@ -86,7 +87,7 @@ public final class WearableToolboxClient {
                 || minecraft.gameMode.getPlayerMode() == GameType.SPECTATOR) {
             return;
         }
-        if (!ToolboxItems.isToolbox(player.getItemBySlot(EquipmentSlot.CHEST))) {
+        if (EquippedToolbox.find(player) == null) {
             return;
         }
 
@@ -116,7 +117,7 @@ public final class WearableToolboxClient {
 
     /**
      * Create 的 ToolboxScreen 自带一个“全部存入附近工具箱”的按钮，它按方块坐标发包。
-     * 可穿戴工具箱没有方块坐标，这里重新初始化界面时只保留确认按钮。
+     * 可穿戴工具箱没有方块坐标，这里重新初始化界面时替换为向自身工具箱存入。
      */
     public static class WearableToolboxScreen extends com.simibubi.create.content.equipment.toolbox.ToolboxScreen {
         public WearableToolboxScreen(com.simibubi.create.content.equipment.toolbox.ToolboxMenu menu,
@@ -128,6 +129,15 @@ public final class WearableToolboxClient {
         protected void init() {
             super.init();
             clearWidgets();
+
+            IconButton deposit = new IconButton(
+                    leftPos + 30 + 81,
+                    topPos + 69,
+                    AllIcons.I_TOOLBOX
+            );
+            deposit.setToolTip(Component.translatable("tooltip.wearable_toolbox.deposit_all"));
+            deposit.withCallback(() -> PacketDistributor.sendToServer(new DepositAllPayload()));
+            addRenderableWidget(deposit);
 
             IconButton confirm = new IconButton(
                     leftPos + 30 + BG.getWidth() - 33,

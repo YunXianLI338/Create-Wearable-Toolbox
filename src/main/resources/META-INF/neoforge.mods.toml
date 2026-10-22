@@ -37,7 +37,7 @@ versionRange="[6.0.10,)"
 ordering="AFTER"
 side="BOTH"
 
-# 可选前置：Curios API。本模组已改用原版胸甲栏，不安装 Curios 也能运行。
+# 可选前置：Curios API。安装后可放进胸饰（body）栏，未安装时只使用原版胸甲栏。
 [[dependencies.${mod_id}]]
 modId="curios"
 type="optional"

@@ -8,7 +8,6 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 
@@ -51,12 +50,12 @@ public final class WearableToolboxBindings {
             return;
         }
 
-        ItemStack chest = player.getItemBySlot(EquipmentSlot.CHEST);
-        if (!ToolboxItems.isToolbox(chest)) {
+        EquippedToolbox equipped = EquippedToolbox.find(player);
+        if (equipped == null) {
             return;
         }
 
-        ToolboxInventory inventory = chest.get(AllDataComponents.TOOLBOX_INVENTORY);
+        ToolboxInventory inventory = equipped.stack().get(AllDataComponents.TOOLBOX_INVENTORY);
         if (inventory == null) {
             inventory = new ToolboxInventory(null);
         }
@@ -68,19 +67,21 @@ public final class WearableToolboxBindings {
         // 同一快捷栏已有绑定：先把旧隔间的物品收回，再改绑。
         unbind(player, hotbarSlot);
 
-        chest = player.getItemBySlot(EquipmentSlot.CHEST);
-        if (!ToolboxItems.isToolbox(chest)) {
+        equipped = EquippedToolbox.find(player);
+        if (equipped == null) {
             return;
         }
-        inventory = chest.get(AllDataComponents.TOOLBOX_INVENTORY);
+        ItemStack toolbox = equipped.stack();
+        inventory = toolbox.get(AllDataComponents.TOOLBOX_INVENTORY);
         if (inventory == null) {
             inventory = new ToolboxInventory(null);
         }
+        filters = filters(inventory);
 
-        UUID id = chest.get(AllDataComponents.TOOLBOX_UUID);
+        UUID id = toolbox.get(AllDataComponents.TOOLBOX_UUID);
         if (id == null) {
             id = UUID.randomUUID();
-            chest.set(AllDataComponents.TOOLBOX_UUID, id);
+            toolbox.set(AllDataComponents.TOOLBOX_UUID, id);
         }
 
         CompoundTag root = root(player);
@@ -92,7 +93,7 @@ public final class WearableToolboxBindings {
         // 快捷栏边框由客户端读取持久化数据绘制，绑定变化后立即同步。
         ToolboxHandler.syncData(player);
 
-        player.setItemSlot(EquipmentSlot.CHEST, chest);
+        EquippedToolbox.set(player, equipped.curioSlot(), toolbox);
         player.displayClientMessage(
                 Component.translatable("message.wearable_toolbox.bound", filters.get(compartment).getHoverName())
                         .withStyle(ChatFormatting.GREEN),
@@ -117,9 +118,9 @@ public final class WearableToolboxBindings {
         int compartment = root.getCompound(key).getInt(SLOT_KEY);
         root.remove(key);
 
-        ItemStack chest = player.getItemBySlot(EquipmentSlot.CHEST);
-        if (ToolboxItems.isToolbox(chest)) {
-            ToolboxInventory inventory = chest.get(AllDataComponents.TOOLBOX_INVENTORY);
+        EquippedToolbox equipped = EquippedToolbox.find(player);
+        if (equipped != null) {
+            ToolboxInventory inventory = equipped.stack().get(AllDataComponents.TOOLBOX_INVENTORY);
             if (inventory != null && compartment >= 0 && compartment < 8) {
                 Inventory playerInventory = player.getInventory();
                 ItemStack current = playerInventory.getItem(hotbarSlot);
@@ -131,9 +132,9 @@ public final class WearableToolboxBindings {
                     }
                 }
 
-                ItemStack updated = chest.copy();
+                ItemStack updated = equipped.stack().copy();
                 updated.set(AllDataComponents.TOOLBOX_INVENTORY, inventory);
-                player.setItemSlot(EquipmentSlot.CHEST, updated);
+                EquippedToolbox.set(player, equipped.curioSlot(), updated);
             }
         }
 
@@ -154,22 +155,23 @@ public final class WearableToolboxBindings {
             return;
         }
 
-        ItemStack chest = player.getItemBySlot(EquipmentSlot.CHEST);
-        if (!ToolboxItems.isToolbox(chest)) {
+        EquippedToolbox equipped = EquippedToolbox.find(player);
+        if (equipped == null) {
             player.getPersistentData().remove(DATA_KEY);
             ToolboxHandler.syncData(player);
             return;
         }
 
-        UUID id = chest.get(AllDataComponents.TOOLBOX_UUID);
+        ItemStack toolbox = equipped.stack();
+        UUID id = toolbox.get(AllDataComponents.TOOLBOX_UUID);
         if (id == null || !id.equals(root.getUUID(TOOLBOX_KEY))) {
-            // 胸甲栏换成了另一个工具箱（或物品丢失了 UUID），旧绑定失效。
+            // 装备槽换成了另一个工具箱（或物品丢失了 UUID），旧绑定失效。
             player.getPersistentData().remove(DATA_KEY);
             ToolboxHandler.syncData(player);
             return;
         }
 
-        ToolboxInventory inventory = chest.get(AllDataComponents.TOOLBOX_INVENTORY);
+        ToolboxInventory inventory = toolbox.get(AllDataComponents.TOOLBOX_INVENTORY);
         if (inventory == null) {
             return;
         }
@@ -236,9 +238,9 @@ public final class WearableToolboxBindings {
             ToolboxHandler.syncData(player);
         }
         if (inventoryChanged) {
-            ItemStack updated = chest.copy();
+            ItemStack updated = toolbox.copy();
             updated.set(AllDataComponents.TOOLBOX_INVENTORY, inventory);
-            player.setItemSlot(EquipmentSlot.CHEST, updated);
+            EquippedToolbox.set(player, equipped.curioSlot(), updated);
             playerInventory.setChanged();
         }
     }
