@@ -37,9 +37,12 @@ public final class WearableToolboxEvents {
 
     /**
      * 手持工具箱右键盔甲架：放到胸甲槽，原有胸甲退回玩家背包。
+     *
+     * <p>盔甲架重写的是 {@code interactAt}，对应 {@link PlayerInteractEvent.EntityInteractSpecific}；
+     * 只监听 {@code EntityInteract} 不会触发。</p>
      */
     @SubscribeEvent
-    public static void onArmorStandInteract(PlayerInteractEvent.EntityInteract event) {
+    public static void onArmorStandInteract(PlayerInteractEvent.EntityInteractSpecific event) {
         if (!(event.getTarget() instanceof ArmorStand stand)) {
             return;
         }

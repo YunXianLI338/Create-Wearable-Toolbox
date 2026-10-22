@@ -4,7 +4,7 @@
   "tooltip.wearable_toolbox.equip": "Can be equipped in the chest armor or body curio slot",
   "tooltip.wearable_toolbox.open": "Press V to open",
   "tooltip.wearable_toolbox.alt": "Hold Alt to use the toolbox",
-  "tooltip.wearable_toolbox.quick_equip": "Shift + right-click to equip",
+  "tooltip.wearable_toolbox.quick_equip": "Shift + left-click to equip",
   "tooltip.wearable_toolbox.deposit_all": "Return items to the toolbox",
   "message.wearable_toolbox.bound": "Bound: %s",
   "message.wearable_toolbox.unbound": "Hotbar binding cleared"
