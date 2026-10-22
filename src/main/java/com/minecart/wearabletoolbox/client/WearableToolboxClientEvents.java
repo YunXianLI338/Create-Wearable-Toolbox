@@ -5,6 +5,8 @@ import com.minecart.wearabletoolbox.common.EquipToolboxPayload;
 import com.minecart.wearabletoolbox.common.EquippedToolbox;
 import com.minecart.wearabletoolbox.common.OpenToolboxPayload;
 import com.minecart.wearabletoolbox.common.ToolboxItems;
+import com.simibubi.create.AllDataComponents;
+import com.simibubi.create.AllItems;
 import com.simibubi.create.AllKeys;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
@@ -72,12 +74,26 @@ public final class WearableToolboxClientEvents {
         }
 
         LocalPlayer player = minecraft.player;
+        // 手持已写入文件的蓝图时，Alt 是 Create 的蓝图工具菜单快捷键，优先让给手持物品。
+        if (holdsSchematic(player)) {
+            return;
+        }
+
         EquippedToolbox equipped = EquippedToolbox.find(player);
         if (equipped == null) {
             return;
         }
 
         WearableToolboxRadialScreen.open(equipped.stack(), player);
+    }
+
+    /**
+     * Create 的蓝图工具菜单只在主手持“带 schematic_file 的蓝图”时激活。
+     */
+    private static boolean holdsSchematic(LocalPlayer player) {
+        ItemStack mainHand = player.getMainHandItem();
+        return AllItems.SCHEMATIC.isIn(mainHand)
+                && mainHand.has(AllDataComponents.SCHEMATIC_FILE);
     }
 
     /**
