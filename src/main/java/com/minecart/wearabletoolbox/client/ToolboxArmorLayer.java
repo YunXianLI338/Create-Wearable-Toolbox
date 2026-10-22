@@ -51,16 +51,16 @@ public final class ToolboxArmorLayer extends RenderLayer<AbstractClientPlayer, P
      */
 
     /** 模型中心的 X 坐标。玩家右方是负 X，-1/16 格表示向玩家右方移动 1 像素。 */
-    private static final float FRONT_X = -1.0F / 16.0F;
+    private static final float FRONT_X = -0.6F / 16.0F;
 
     /** 模型包围盒下沿的 Y 坐标。0.50 是基础高度；实体 Y 轴向下，减去 9/16 格等于视觉上移 9 像素。 */
-    private static final float FRONT_Y = 0.50F - 9.0F / 16.0F;
+    private static final float FRONT_Y = 0.50F - 8.9F / 16.0F;
 
     /** 模型中心的 Z 坐标。负 Z 是玩家前方；-0.10 让箱体贴在胸前，再加 0.5/16 格即向身后挪 0.5 像素。 */
-    private static final float FRONT_Z = -0.10F + 0.5F / 16.0F;
+    private static final float FRONT_Z = -0.10F + 0.8F / 16.0F;
 
-    /** 整体缩放。0.55 表示缩到原始方块模型的 55%，模型实际高度为 MODEL_HEIGHT × 0.55。 */
-    private static final float SCALE = 0.55F;
+    /** 整体缩放。表示缩到原始方块模型的 ？*100%，模型实际高度为 MODEL_HEIGHT × ?。 */
+    private static final float SCALE = 0.48F;
 
     /** 模型原始坐标的 X 中心（8/16 格）。缩放后先减去它，才能让模型左右居中对齐玩家身体。 */
     private static final float CENTER_X = 0.50F;
