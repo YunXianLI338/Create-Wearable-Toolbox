@@ -7,7 +7,7 @@ import com.minecart.wearabletoolbox.common.OpenToolboxPayload;
 import com.minecart.wearabletoolbox.common.ToolboxItems;
 import com.simibubi.create.AllKeys;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.entity.ArmorStandRenderer;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -85,7 +85,8 @@ public final class WearableToolboxClientEvents {
      *
      * <p>原版 {@code InventoryMenu#quickMoveStack} 只对 {@code getEquipmentSlotForItem}
      * 返回盔甲槽的物品自动穿戴；工具箱是 BlockItem，这个方法返回主手，所以需要在这里
-     * 自己拦截 Shift 点击。</p>
+     * 自己拦截 Shift 点击。只拦截玩家物品栏界面，工作台、箱子等工作台 GUI 仍走原版
+     * 快速移动逻辑，避免把工具箱穿到身上而不是放进容器。</p>
      */
     @SubscribeEvent
     public static void onMousePressed(ScreenEvent.MouseButtonPressed.Pre event) {
@@ -95,7 +96,7 @@ public final class WearableToolboxClientEvents {
         }
 
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player == null || !(event.getScreen() instanceof AbstractContainerScreen<?> screen)
+        if (minecraft.player == null || !(event.getScreen() instanceof InventoryScreen screen)
                 || !screen.hasShiftDown()) {
             return;
         }
