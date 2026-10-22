@@ -4,7 +4,6 @@ import com.minecart.wearabletoolbox.WearableToolbox;
 import com.minecart.wearabletoolbox.common.ToolboxItems;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import com.mojang.math.Axis;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.PlayerModel;
 import net.minecraft.client.player.AbstractClientPlayer;
@@ -45,11 +44,11 @@ public final class ToolboxArmorLayer extends RenderLayer<AbstractClientPlayer, P
     };
 
     /**
-     * 模型在玩家背部的摆放参数。模型坐标 16 单位 = 1 格。
-     * 先移到背部中心，绕 Y 轴转 180° 面向外，再绕 Z 轴转 180° 上下翻转，最后按中心缩放。
+     * 模型在玩家胸前的摆放参数。模型坐标 16 单位 = 1 格。
+     * 按挎包正向挂在胸前：箱体朝前，模型自带的挎带元素从身体两侧绕向背后。
      */
-    private static final float BACK_Y = 0.50F;
-    private static final float BACK_Z = 0.45F;
+    private static final float FRONT_Y = 0.50F + 9.0F / 16.0F;
+    private static final float FRONT_Z = -0.10F;
     private static final float SCALE = 0.77F;
     private static final float CENTER_X = 0.50F;
     private static final float CENTER_Z = 0.6875F;
@@ -79,9 +78,7 @@ public final class ToolboxArmorLayer extends RenderLayer<AbstractClientPlayer, P
         poseStack.pushPose();
         getParentModel().body.translateAndRotate(poseStack);
         float halfHeight = MODEL_HEIGHT * SCALE / 2.0F;
-        poseStack.translate(0.0F, BACK_Y + halfHeight, BACK_Z);
-        poseStack.mulPose(Axis.YP.rotationDegrees(180.0F));
-        poseStack.mulPose(Axis.ZP.rotationDegrees(180.0F));
+        poseStack.translate(0.0F, FRONT_Y + halfHeight, FRONT_Z);
         poseStack.scale(SCALE, SCALE, SCALE);
         poseStack.translate(-CENTER_X, -MODEL_HEIGHT / 2.0F, -CENTER_Z);
 
