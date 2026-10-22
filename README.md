@@ -2,7 +2,7 @@
 
 **Minecraft 1.21.1 · NeoForge · MIT**
 
-把机械动力的工具箱装备到胸甲栏：按 `V` 打开 8 隔间界面，或按住 `Alt` 打开与放置版一致的径向菜单，把隔间绑定到快捷栏并自动补充。Curios 为可选前置，不安装也能运行。
+把机械动力的工具箱装备到胸甲栏或 Curios 的胸饰栏：按 `V` 打开 8 隔间界面，或按住 `Alt` 打开与放置版一致的径向菜单，把隔间绑定到快捷栏并自动补充。打开界面时展示模型会切换为打开盖子的版本。Curios 为可选前置，不安装也能运行。
 
 ---
 
@@ -17,24 +17,27 @@
 | Java | 21 |
 | Parchment | 2024.11.17 |
 | 机械动力 Create | 6.0.10（`[6.0.10,)`） |
-| Curios API | 9.2.2+1.21.1（可选，不安装也能运行） |
+| Curios API | 9.5.1+1.21.1（可选，不安装也能运行） |
 
 ### 前置模组
 
 - **机械动力 Create 6.0.10（必需）**：编译期依赖 `com.simibubi.create:create-1.21.1:6.0.10-280`，其 jarjar 已内置 Ponder、Flywheel、Registrate。
-- **Curios API 9.2.2+1.21.1（可选）**：本模组不使用 Curios 槽位，也不调用 Curios API；仅将其声明为 `optional`，安装与否都不影响装备和打开工具箱。
-- 本地开发环境 `run/mods` 保留了 `create-1.21.1-6.0.10.jar` 与 `curios-neoforge-9.5.1+1.21.1.jar`，后者仅用于测试与其他模组的兼容性。
+- **Curios API 9.5.1+1.21.1（可选）**：安装后可把工具箱放进 **胸饰（body）** 饰品栏；未安装时只使用原版胸甲栏。Curios 相关调用做了加载检查，不会因缺少前置而崩溃。
+- 本地开发环境 `run/mods` 保留了 `create-1.21.1-6.0.10.jar` 与 `curios-neoforge-9.5.1+1.21.1.jar`。
 
 ## 玩法
 
-1. 把任意颜色的 Create 工具箱放进原版 **胸甲栏**。
-2. 按住 `Alt`（Create 的“工具箱”键，默认左 Alt，可在“选项 → 控制”中修改）打开径向菜单：
+1. 把任意颜色的 Create 工具箱放进原版 **胸甲栏**；安装 Curios 时也可以放进 **胸饰（body）** 饰品栏。
+2. 在物品栏里对准工具箱 `Shift + 右键`，可快捷穿到胸甲栏。
+3. 按住 `Alt`（Create 的“工具箱”键，默认左 Alt，可在“选项 → 控制”中修改）打开径向菜单：
    - 把鼠标移到某个有物品的隔间上松开，或按对应数字键，即可把该隔间绑定到当前快捷栏。
    - 中间的槽位用于解除当前快捷栏的绑定。
    - 快捷栏物品不足时自动从隔间补充，超过半组时自动存回；换握其他物品或清空隔间会自动解绑。
-  - 已绑定的快捷栏槽位会显示 Create 同款黄铜色边框，选中槽位边框样式与放置版一致。
-3. 按 `V`（可修改）打开完整界面：8 个隔间、每格 4 槽、过滤器、快速移动与堆叠整理；关闭时内容写回物品。
-4. 附近有放置版工具箱时，`Alt` 仍优先交给 Create 原逻辑，不会同时弹出两个界面。
+   - 已绑定的快捷栏槽位会显示 Create 同款黄铜色边框，选中槽位边框样式与放置版一致。
+   - 玩家身上有工具箱时，即使附近有放置版工具箱也优先打开可穿戴版。
+4. 按 `V`（可修改）打开完整界面：8 个隔间、每格 4 槽、过滤器、快速移动与堆叠整理；界面左侧的“把物品收回工具箱”按钮会把背包里能放入的物品全部存入。关闭时内容写回物品。
+5. 打开 `V` 界面或径向菜单时，身上的展示模型会切换为打开盖子的 `brown_on.json`；关闭后恢复 `brown.json`。
+6. 手持工具箱右键 **盔甲架**，可把它放到盔甲架的胸甲槽，原有胸甲退回背包。
 
 内容保存在物品的 `create:toolbox_inventory` 组件中，掉落后不会丢失。绑定数据保存在玩家的 `WearableToolboxData` 持久化 NBT 中，换下工具箱或隔间清空时自动解除。
 
@@ -86,7 +89,9 @@ wearable_toolbox/
 ├─ src/main/resources/
 │  ├─ META-INF/neoforge.mods.toml   # 1.21.1 形态（含 modLoader / loaderVersion）
 │  ├─ wearable_toolbox.mixins.json  # Mixin 配置
-│  └─ assets/wearable_toolbox/      # 语言文件
+│  ├─ assets/wearable_toolbox/      # 语言文件与 brown / brown_on 展示模型
+│  ├─ data/curios/                  # 胸饰槽物品标签（Curios 可选）
+│  └─ data/wearable_toolbox/        # 胸饰槽实体配置（Curios 可选）
 ├─ src/generated/resources/         # runData 输出（构建时生成）
 ├─ LICENSE                          # MIT
 └─ README.md
