@@ -13,9 +13,6 @@ import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.model.HumanoidArmorModel;
-import net.minecraft.client.model.geom.builders.CubeDeformation;
-import net.minecraft.client.model.geom.builders.LayerDefinition;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.entity.player.PlayerRenderer;
 import net.minecraft.client.resources.PlayerSkin;
@@ -60,22 +57,11 @@ public final class WearableToolboxClient {
     }
 
     @SubscribeEvent
-    public static void registerLayers(EntityRenderersEvent.RegisterLayerDefinitions event) {
-        event.registerLayerDefinition(
-                ToolboxArmorLayer.LAYER,
-                () -> LayerDefinition.create(
-                        HumanoidArmorModel.createBodyLayer(new CubeDeformation(1.0F)),
-                        64, 32
-                )
-        );
-    }
-
-    @SubscribeEvent
     public static void addLayers(EntityRenderersEvent.AddLayers event) {
         for (PlayerSkin.Model skin : event.getSkins()) {
             PlayerRenderer renderer = event.getSkin(skin);
             if (renderer != null) {
-                renderer.addLayer(new ToolboxArmorLayer(renderer, event.getEntityModels()));
+                renderer.addLayer(new ToolboxArmorLayer(renderer));
             }
         }
     }
