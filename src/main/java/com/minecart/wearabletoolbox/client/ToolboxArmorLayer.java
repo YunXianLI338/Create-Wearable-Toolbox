@@ -50,6 +50,9 @@ public final class ToolboxArmorLayer extends RenderLayer<AbstractClientPlayer, P
      * 去掉 Y 轴 180° 后箱体朝前，模型自带的挎带从身体两侧绕向背后。
      */
 
+    /** 模型中心的 X 坐标。玩家右方是负 X，-2/16 格表示向玩家右方移动 2 像素。 */
+    private static final float FRONT_X = -2.0F / 16.0F;
+
     /** 模型包围盒下沿的 Y 坐标。0.50 是基础高度；实体 Y 轴向下，减去 8.5/16 格等于视觉上移 8.5 像素。 */
     private static final float FRONT_Y = 0.50F - 8.5F / 16.0F;
 
@@ -92,7 +95,7 @@ public final class ToolboxArmorLayer extends RenderLayer<AbstractClientPlayer, P
         poseStack.pushPose();
         getParentModel().body.translateAndRotate(poseStack);
         float halfHeight = MODEL_HEIGHT * SCALE / 2.0F;
-        poseStack.translate(0.0F, FRONT_Y + halfHeight, FRONT_Z);
+        poseStack.translate(FRONT_X, FRONT_Y + halfHeight, FRONT_Z);
         poseStack.mulPose(Axis.ZP.rotationDegrees(180.0F));
         poseStack.scale(SCALE, SCALE, SCALE);
         poseStack.translate(-CENTER_X, -MODEL_HEIGHT / 2.0F, -CENTER_Z);
