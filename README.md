@@ -57,6 +57,18 @@ gradlew.bat runData
 - `runServer` 首次启动后需把 `run/eula.txt` 改为 `eula=true`；局域网调试可再把 `server.properties` 的 `online-mode` 设为 `false`。
 - `runData` 的输出写入 `src/generated/resources`，该目录已挂进资源源集；不要手改生成文件，改数据生成器后重跑。
 
+### 在 IDEA 中运行
+
+项目已配置为使用 Gradle Wrapper 8.8，Gradle JVM 取 `#JAVA_HOME`（需为 JDK 21）。IDEA 运行配置里新增了四个 Gradle 任务，直接复用项目构建，不需要手写 `build/moddev` 下的参数文件：
+
+- `Client (Gradle)` → `runClient`
+- `Server (Gradle)` → `runServer`
+- `Data (Gradle)` → `runData`
+- `Build (Gradle)` → `build`
+
+如果 Gradle 工具窗提示 `Gradle build daemon has been stopped: stop command received`，点一次 **Reload All Gradle Projects** 即可；在 IDEA 打开项目期间不要执行 `gradlew --stop`，它会连同 IDEA 使用的 daemon 一起停掉。
+
+
 ## 目录结构
 
 ```
