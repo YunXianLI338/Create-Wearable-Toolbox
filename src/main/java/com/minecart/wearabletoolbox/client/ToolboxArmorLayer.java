@@ -50,14 +50,14 @@ public final class ToolboxArmorLayer extends RenderLayer<AbstractClientPlayer, P
      * 去掉 Y 轴 180° 后箱体朝前，模型自带的挎带从身体两侧绕向背后。
      */
 
-    /** 模型包围盒下沿的 Y 坐标。0.50 是基础高度；实体 Y 轴向下，减去 9/16 格等于视觉上移 9 像素。 */
-    private static final float FRONT_Y = 0.50F - 9.0F / 16.0F;
+    /** 模型包围盒下沿的 Y 坐标。0.50 是基础高度；实体 Y 轴向下，减去 8.5/16 格等于视觉上移 8.5 像素。 */
+    private static final float FRONT_Y = 0.50F - 8.5F / 16.0F;
 
-    /** 模型中心的 Z 坐标。负 Z 是玩家前方，-0.10 表示把箱体往胸前推 0.10 格，避免埋进身体。 */
-    private static final float FRONT_Z = -0.10F;
+    /** 模型中心的 Z 坐标。负 Z 是玩家前方；-0.10 让箱体贴在胸前，再加 0.5/16 格即向身后挪 0.5 像素。 */
+    private static final float FRONT_Z = -0.10F + 0.5F / 16.0F;
 
-    /** 整体缩放。0.5 表示缩到原始方块模型的一半，模型实际高度为 MODEL_HEIGHT × 0.5。 */
-    private static final float SCALE = 0.5F;
+    /** 整体缩放。0.55 表示缩到原始方块模型的 55%，模型实际高度为 MODEL_HEIGHT × 0.55。 */
+    private static final float SCALE = 0.55F;
 
     /** 模型原始坐标的 X 中心（8/16 格）。缩放后先减去它，才能让模型左右居中对齐玩家身体。 */
     private static final float CENTER_X = 0.50F;
