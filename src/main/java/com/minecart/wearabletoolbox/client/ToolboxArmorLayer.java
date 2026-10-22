@@ -68,6 +68,10 @@ public final class ToolboxArmorLayer extends RenderLayer<AbstractClientPlayer, P
     /** 模型原始高度：JSON 中 y=0 到 y=23，共 23/16 格。 */
     private static final float MODEL_HEIGHT = 23.0F / 16.0F;
 
+    /** 盔甲架专用偏移：相对玩家模型上移 3 像素、左移 6 像素。 */
+    private static final float ARMOR_STAND_OFFSET_X = 6.0F / 16.0F;
+    private static final float ARMOR_STAND_OFFSET_Y = -3.0F / 16.0F;
+
     private static List<BakedQuad> quads;
     private static List<BakedQuad> openQuads;
     private static boolean normalLoadFailed;
@@ -93,12 +97,12 @@ public final class ToolboxArmorLayer extends RenderLayer<AbstractClientPlayer, P
     /**
      * 把工具箱模型挂到任意 HumanoidModel 的 body 上；玩家与盔甲架共用。
      *
-     * @param open         是否使用打开盖子的模型
-     * @param flipVertical 是否再绕模型中心上下翻转；盔甲架的 body 坐标系与玩家不同，需要翻转
+     * @param open       是否使用打开盖子的模型
+     * @param armorStand 是否渲染在盔甲架上；盔甲架的 body 坐标系不同，需要额外翻转与偏移
      */
     public static void renderModel(PoseStack poseStack, MultiBufferSource buffer, int packedLight,
                                    net.minecraft.client.model.geom.ModelPart body, boolean open,
-                                   boolean flipVertical) {
+                                   boolean armorStand) {
         List<BakedQuad> modelQuads = getQuads(open);
         if (modelQuads.isEmpty()) {
             return;
@@ -107,11 +111,13 @@ public final class ToolboxArmorLayer extends RenderLayer<AbstractClientPlayer, P
         poseStack.pushPose();
         body.translateAndRotate(poseStack);
         float halfHeight = MODEL_HEIGHT * SCALE / 2.0F;
-        poseStack.translate(FRONT_X, FRONT_Y + halfHeight, FRONT_Z);
+        float offsetX = armorStand ? ARMOR_STAND_OFFSET_X : 0.0F;
+        float offsetY = armorStand ? ARMOR_STAND_OFFSET_Y : 0.0F;
+        poseStack.translate(FRONT_X + offsetX, FRONT_Y + halfHeight + offsetY, FRONT_Z);
         poseStack.mulPose(Axis.ZP.rotationDegrees(180.0F));
         poseStack.scale(SCALE, SCALE, SCALE);
         poseStack.translate(-CENTER_X, -MODEL_HEIGHT / 2.0F, -CENTER_Z);
-        if (flipVertical) {
+        if (armorStand) {
             // 此时原点已经在模型中心，再转 180° 只改变上下/左右朝向，不会把模型甩到别处。
             poseStack.mulPose(Axis.ZP.rotationDegrees(180.0F));
         }
