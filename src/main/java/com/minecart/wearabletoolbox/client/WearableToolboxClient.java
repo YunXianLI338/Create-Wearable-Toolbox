@@ -13,7 +13,12 @@ import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.model.HumanoidArmorModel;
+import net.minecraft.client.model.geom.builders.CubeDeformation;
+import net.minecraft.client.model.geom.builders.LayerDefinition;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.renderer.entity.player.PlayerRenderer;
+import net.minecraft.client.resources.PlayerSkin;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -23,6 +28,7 @@ import net.minecraft.world.level.GameType;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
@@ -51,6 +57,27 @@ public final class WearableToolboxClient {
     @SubscribeEvent
     public static void registerScreens(RegisterMenuScreensEvent event) {
         event.register(WearableToolbox.TOOLBOX_MENU.get(), WearableToolboxScreen::new);
+    }
+
+    @SubscribeEvent
+    public static void registerLayers(EntityRenderersEvent.RegisterLayerDefinitions event) {
+        event.registerLayerDefinition(
+                ToolboxArmorLayer.LAYER,
+                () -> LayerDefinition.create(
+                        HumanoidArmorModel.createBodyLayer(new CubeDeformation(1.0F)),
+                        64, 32
+                )
+        );
+    }
+
+    @SubscribeEvent
+    public static void addLayers(EntityRenderersEvent.AddLayers event) {
+        for (PlayerSkin.Model skin : event.getSkins()) {
+            PlayerRenderer renderer = event.getSkin(skin);
+            if (renderer != null) {
+                renderer.addLayer(new ToolboxArmorLayer(renderer, event.getEntityModels()));
+            }
+        }
     }
 
     @SubscribeEvent
