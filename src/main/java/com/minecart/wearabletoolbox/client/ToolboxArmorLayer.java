@@ -2,6 +2,7 @@ package com.minecart.wearabletoolbox.client;
 
 import com.minecart.wearabletoolbox.WearableToolbox;
 import com.minecart.wearabletoolbox.common.EquippedToolbox;
+import com.minecart.wearabletoolbox.common.ToolboxItems;
 import com.minecart.wearabletoolbox.common.WearableToolboxMenu;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
@@ -23,14 +24,16 @@ import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.model.ModelState;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.DyeColor;
 
 import javax.annotation.Nullable;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 把 assets/wearable_toolbox/models/brown.json 作为身上工具箱的展示模型。
@@ -68,14 +71,15 @@ public final class ToolboxArmorLayer extends RenderLayer<AbstractClientPlayer, P
     /** 模型原始高度：JSON 中 y=0 到 y=23，共 23/16 格。 */
     private static final float MODEL_HEIGHT = 23.0F / 16.0F;
 
-    /** 盔甲架专用偏移：实测其 body 坐标 X 负方向为左、Y 正方向为上，故左移取 -6/16、上移取 +3/16。 */
+    /** 盔甲架专用偏移：实测其 body 坐标 X 负方向为左、Y 正方向为上。 */
     private static final float ARMOR_STAND_OFFSET_X = -6.0F / 16.0F;
-    private static final float ARMOR_STAND_OFFSET_Y = 3.0F / 16.0F;
+    private static final float ARMOR_STAND_OFFSET_Y = 4.0F / 16.0F;
 
-    private static List<BakedQuad> quads;
-    private static List<BakedQuad> openQuads;
-    private static boolean normalLoadFailed;
-    private static boolean openLoadFailed;
+    /** 每种颜色的普通模型缓存；键是工具箱方块颜色。 */
+    private static final Map<DyeColor, List<BakedQuad>> NORMAL_QUADS = new EnumMap<>(DyeColor.class);
+
+    /** 每种颜色的打开模型缓存。 */
+    private static final Map<DyeColor, List<BakedQuad>> OPEN_QUADS = new EnumMap<>(DyeColor.class);
 
     public ToolboxArmorLayer(RenderLayerParent<AbstractClientPlayer, PlayerModel<AbstractClientPlayer>> parent) {
         super(parent);
@@ -91,7 +95,8 @@ public final class ToolboxArmorLayer extends RenderLayer<AbstractClientPlayer, P
         }
 
         boolean open = isToolboxOpen(player);
-        renderModel(poseStack, buffer, packedLight, getParentModel().body, open, false);
+        renderModel(poseStack, buffer, packedLight, getParentModel().body, open, false,
+                ToolboxItems.color(equipped.stack()));
     }
 
     /**
@@ -99,11 +104,12 @@ public final class ToolboxArmorLayer extends RenderLayer<AbstractClientPlayer, P
      *
      * @param open       是否使用打开盖子的模型
      * @param armorStand 是否渲染在盔甲架上；盔甲架的 body 坐标系不同，需要额外翻转与偏移
+     * @param color      工具箱颜色；为 {@code null} 时使用棕色
      */
     public static void renderModel(PoseStack poseStack, MultiBufferSource buffer, int packedLight,
                                    net.minecraft.client.model.geom.ModelPart body, boolean open,
-                                   boolean armorStand) {
-        List<BakedQuad> modelQuads = getQuads(open);
+                                   boolean armorStand, @Nullable DyeColor color) {
+        List<BakedQuad> modelQuads = getQuads(open, color);
         if (modelQuads.isEmpty()) {
             return;
         }
@@ -140,35 +146,27 @@ public final class ToolboxArmorLayer extends RenderLayer<AbstractClientPlayer, P
         return Minecraft.getInstance().screen instanceof WearableToolboxRadialScreen;
     }
 
-    private static List<BakedQuad> getQuads(boolean open) {
-        if (!open || openLoadFailed) {
-            return getNormalQuads();
+    private static List<BakedQuad> getQuads(boolean open, @Nullable DyeColor color) {
+        DyeColor key = color == null ? DyeColor.BROWN : color;
+        if (!open) {
+            return NORMAL_QUADS.computeIfAbsent(key,
+                    c -> loadQuads(MODEL_LOCATION, false, c));
         }
-        if (openQuads == null) {
-            openQuads = loadQuads(OPEN_MODEL_LOCATION, true);
-            if (openQuads.isEmpty()) {
-                openLoadFailed = true;
-                return getNormalQuads();
+
+        List<BakedQuad> openModel = OPEN_QUADS.get(key);
+        if (openModel == null) {
+            openModel = loadQuads(OPEN_MODEL_LOCATION, true, key);
+            if (openModel.isEmpty()) {
+                // 打开模型缺失或损坏时退回普通模型，避免整件装备消失。
+                return NORMAL_QUADS.computeIfAbsent(key,
+                        c -> loadQuads(MODEL_LOCATION, false, c));
             }
+            OPEN_QUADS.put(key, openModel);
         }
-        return openQuads;
+        return openModel;
     }
 
-    private static List<BakedQuad> getNormalQuads() {
-        if (quads != null) {
-            return quads;
-        }
-        if (normalLoadFailed) {
-            return List.of();
-        }
-        quads = loadQuads(MODEL_LOCATION, false);
-        if (quads.isEmpty()) {
-            normalLoadFailed = true;
-        }
-        return quads;
-    }
-
-    private static List<BakedQuad> loadQuads(ResourceLocation location, boolean optional) {
+    private static List<BakedQuad> loadQuads(ResourceLocation location, boolean optional, DyeColor color) {
         try {
             Resource resource = Minecraft.getInstance().getResourceManager()
                     .getResource(location)
@@ -178,18 +176,27 @@ public final class ToolboxArmorLayer extends RenderLayer<AbstractClientPlayer, P
                 model = BlockModel.fromStream(new InputStreamReader(stream, StandardCharsets.UTF_8));
             }
 
+            // 16 色工具箱共用同一套 UV，只是方块图集里的贴图不同。
+            ResourceLocation texture = ResourceLocation.fromNamespaceAndPath(
+                    "create", "block/toolbox/" + color.getSerializedName());
+            TextureAtlasSprite colorSprite = Minecraft.getInstance()
+                    .getTextureAtlas(TextureAtlas.LOCATION_BLOCKS)
+                    .apply(texture);
+
             List<BakedQuad> baked = new ArrayList<>();
             for (BlockElement element : model.getElements()) {
                 for (var entry : element.faces.entrySet()) {
                     BlockElementFace face = entry.getValue();
-                    TextureAtlasSprite sprite = model.getMaterial(face.texture()).sprite();
+                    TextureAtlasSprite sprite = "#0".equals(face.texture())
+                            ? colorSprite
+                            : model.getMaterial(face.texture()).sprite();
                     baked.add(BlockModel.bakeFace(element, face, sprite, entry.getKey(), MODEL_STATE));
                 }
             }
             return List.copyOf(baked);
         } catch (Exception exception) {
             if (!optional) {
-                WearableToolbox.LOGGER.error("无法加载可穿戴工具箱模型 {}", location, exception);
+                WearableToolbox.LOGGER.error("无法加载可穿戴工具箱模型 {}（颜色 {}）", location, color, exception);
             }
             return List.of();
         }

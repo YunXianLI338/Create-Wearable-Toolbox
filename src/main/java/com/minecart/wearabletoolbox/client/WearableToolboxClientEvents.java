@@ -135,7 +135,8 @@ public final class WearableToolboxClientEvents {
                 event.getPackedLight(),
                 renderer.getModel().body,
                 false,
-                true
+                true,
+                ToolboxItems.color(chest)
         );
     }
 }
