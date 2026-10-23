@@ -1,7 +1,6 @@
 package com.minecart.wearabletoolbox;
 
 import com.minecart.wearabletoolbox.common.WearableToolboxBindings;
-import com.simibubi.create.content.equipment.toolbox.ToolboxHandler;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -30,7 +29,7 @@ public final class WearableToolboxServerEvents {
             CompoundTag root = player.getPersistentData().getCompound(WearableToolboxBindings.DATA_KEY);
             if (!root.isEmpty()) {
                 // 客户端重新登录时本地没有绑定数据，需要主动同步一次以恢复快捷栏边框。
-                ToolboxHandler.syncData(player);
+                WearableToolboxBindings.syncData(player);
             }
         }
     }

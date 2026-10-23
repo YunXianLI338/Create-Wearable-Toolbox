@@ -80,7 +80,7 @@ public final class WearableToolboxRadialScreen extends RadialToolboxMenu {
         if (selected >= filters.size() || filters.get(selected).isEmpty()) {
             return;
         }
-        if (inventory.getStackInSlot(selected * ToolboxInventory.STACKS_PER_COMPARTMENT).isEmpty()) {
+        if (!WearableToolboxBindings.hasCompartmentItems(inventory, selected)) {
             return;
         }
 

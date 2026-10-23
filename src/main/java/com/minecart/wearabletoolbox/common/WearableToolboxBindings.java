@@ -2,8 +2,9 @@ package com.minecart.wearabletoolbox.common;
 
 import com.minecart.wearabletoolbox.mixin.ToolboxInventoryAccess;
 import com.simibubi.create.AllDataComponents;
-import com.simibubi.create.content.equipment.toolbox.ToolboxHandler;
 import com.simibubi.create.content.equipment.toolbox.ToolboxInventory;
+import com.simibubi.create.foundation.networking.ISyncPersistentData;
+import net.createmod.catnip.platform.CatnipServices;
 import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -54,6 +55,21 @@ public final class WearableToolboxBindings {
     }
 
     /**
+     * 同步玩家持久化数据。
+     *
+     * <p>不能直接用 Create 的 {@code ToolboxHandler.syncData}：它把玩家正在使用的
+     * {@code CompoundTag} 原样塞进网络包，而网络编码在 Netty 线程上异步执行。
+     * 绑定/补充逻辑随后还会继续修改同一棵树，编码时就会抛出
+     * {@code ConcurrentModificationException} 并断开客户端。这里发送一份深拷贝。</p>
+     */
+    public static void syncData(ServerPlayer player) {
+        CatnipServices.NETWORK.sendToClient(
+                player,
+                new ISyncPersistentData.PersistentDataPacket(player.getId(), player.getPersistentData().copy())
+        );
+    }
+
+    /**
      * 手动“全部存入”前解除所有快捷栏绑定，但不像 {@link #unbind} 那样把快捷栏物品搬回去。
      *
      * <p>Create 的 {@code ToolboxDisposeAllPacket} 也会先 unequip 指向该工具箱的快捷栏，
@@ -83,7 +99,7 @@ public final class WearableToolboxBindings {
         } else {
             saveRoot(player, root);
         }
-        ToolboxHandler.syncData(player);
+        syncData(player);
     }
 
     /**
@@ -105,6 +121,11 @@ public final class WearableToolboxBindings {
         }
         List<ItemStack> filters = filters(inventory);
         if (compartment >= filters.size() || filters.get(compartment).isEmpty()) {
+            return;
+        }
+        // 过滤器只是代表物，隔间里可能已经空了（物品正被拿在快捷栏里）。
+        // 此时再绑定会先解掉旧绑定，然后从空隔间里“取出空气”。
+        if (!hasCompartmentItems(inventory, compartment)) {
             return;
         }
 
@@ -135,7 +156,7 @@ public final class WearableToolboxBindings {
         root.put(String.valueOf(hotbarSlot), entry);
         saveRoot(player, root);
         // 快捷栏边框由客户端读取持久化数据绘制，绑定变化后立即同步。
-        ToolboxHandler.syncData(player);
+        syncData(player);
 
         EquippedToolbox.set(player, equipped.curioSlot(), toolbox);
         player.displayClientMessage(
@@ -183,7 +204,7 @@ public final class WearableToolboxBindings {
         }
 
         saveRoot(player, root);
-        ToolboxHandler.syncData(player);
+        syncData(player);
         player.displayClientMessage(
                 Component.translatable("message.wearable_toolbox.unbound").withStyle(ChatFormatting.GRAY),
                 true
@@ -202,7 +223,7 @@ public final class WearableToolboxBindings {
         EquippedToolbox equipped = EquippedToolbox.find(player);
         if (equipped == null) {
             player.getPersistentData().remove(DATA_KEY);
-            ToolboxHandler.syncData(player);
+            syncData(player);
             return;
         }
 
@@ -211,7 +232,7 @@ public final class WearableToolboxBindings {
         if (id == null || !id.equals(root.getUUID(TOOLBOX_KEY))) {
             // 装备槽换成了另一个工具箱（或物品丢失了 UUID），旧绑定失效。
             player.getPersistentData().remove(DATA_KEY);
-            ToolboxHandler.syncData(player);
+            syncData(player);
             return;
         }
 
@@ -279,7 +300,7 @@ public final class WearableToolboxBindings {
 
         if (rootChanged) {
             saveRoot(player, root);
-            ToolboxHandler.syncData(player);
+            syncData(player);
         }
         if (inventoryChanged) {
             ItemStack updated = toolbox.copy();
@@ -291,5 +312,20 @@ public final class WearableToolboxBindings {
 
     private static List<ItemStack> filters(ToolboxInventory inventory) {
         return ((ToolboxInventoryAccess) (Object) inventory).wearableToolbox$filters();
+    }
+
+    /**
+     * 隔间里是否真的有物品（而不是只有过滤器代表物）。
+     */
+    public static boolean hasCompartmentItems(ToolboxInventory inventory, int compartment) {
+        if (compartment < 0 || compartment >= 8) {
+            return false;
+        }
+        for (int i = 0; i < ToolboxInventory.STACKS_PER_COMPARTMENT; i++) {
+            if (!inventory.getStackInSlot(compartment * ToolboxInventory.STACKS_PER_COMPARTMENT + i).isEmpty()) {
+                return true;
+            }
+        }
+        return false;
     }
 }
