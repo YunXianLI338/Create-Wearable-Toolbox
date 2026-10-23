@@ -43,7 +43,11 @@ public record EquipToolboxPayload(int inventorySlot) implements CustomPacketPayl
         }
 
         ItemStack chest = player.getItemBySlot(EquipmentSlot.CHEST);
-        player.getInventory().setItem(slot, chest);
+        // 与原版盔甲一致：胸甲栏被占用时不强行替换，避免把正在穿的胸甲顶掉。
+        if (!chest.isEmpty()) {
+            return;
+        }
+        player.getInventory().setItem(slot, ItemStack.EMPTY);
         player.setItemSlot(EquipmentSlot.CHEST, stack);
         player.getInventory().setChanged();
         player.containerMenu.broadcastChanges();

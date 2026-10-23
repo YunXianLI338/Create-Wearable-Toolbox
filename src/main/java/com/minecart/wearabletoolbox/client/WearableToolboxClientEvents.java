@@ -9,7 +9,7 @@ import com.simibubi.create.AllDataComponents;
 import com.simibubi.create.AllItems;
 import com.simibubi.create.AllKeys;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.inventory.InventoryScreen;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.entity.ArmorStandRenderer;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -112,8 +112,13 @@ public final class WearableToolboxClientEvents {
         }
 
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player == null || !(event.getScreen() instanceof InventoryScreen screen)
+        if (minecraft.player == null || !(event.getScreen() instanceof AbstractContainerScreen<?> screen)
                 || !screen.hasShiftDown()) {
+            return;
+        }
+
+        // 与原版盔甲一致：胸甲栏已有物品时不强行替换，交给原版 Shift 点击处理。
+        if (!minecraft.player.getItemBySlot(EquipmentSlot.CHEST).isEmpty()) {
             return;
         }
 
