@@ -12,6 +12,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.List;
 import java.util.UUID;
@@ -67,6 +68,16 @@ public final class WearableToolboxBindings {
                 player,
                 new ISyncPersistentData.PersistentDataPacket(player.getId(), player.getPersistentData().copy())
         );
+    }
+
+    /**
+     * 把服务端刚写回装备槽的工具箱物品发给客户端。
+     *
+     * <p>胸甲栏的物品组件不一定立刻同步给玩家自己，径向菜单读取本地物品栈时会看到旧库存，
+     * 导致“隔间已空但图标仍是亮的”。</p>
+     */
+    public static void syncToolbox(ServerPlayer player, int curioSlot, ItemStack stack) {
+        PacketDistributor.sendToPlayer(player, new SyncToolboxPayload(stack.copy(), curioSlot));
     }
 
     /**
@@ -159,6 +170,7 @@ public final class WearableToolboxBindings {
         syncData(player);
 
         EquippedToolbox.set(player, equipped.curioSlot(), toolbox);
+        syncToolbox(player, equipped.curioSlot(), toolbox);
         player.displayClientMessage(
                 Component.translatable("message.wearable_toolbox.bound", filters.get(compartment).getHoverName())
                         .withStyle(ChatFormatting.GREEN),
@@ -200,6 +212,7 @@ public final class WearableToolboxBindings {
                 ItemStack updated = equipped.stack().copy();
                 updated.set(AllDataComponents.TOOLBOX_INVENTORY, inventory);
                 EquippedToolbox.set(player, equipped.curioSlot(), updated);
+                syncToolbox(player, equipped.curioSlot(), updated);
             }
         }
 
@@ -306,6 +319,7 @@ public final class WearableToolboxBindings {
             ItemStack updated = toolbox.copy();
             updated.set(AllDataComponents.TOOLBOX_INVENTORY, inventory);
             EquippedToolbox.set(player, equipped.curioSlot(), updated);
+            syncToolbox(player, equipped.curioSlot(), updated);
             playerInventory.setChanged();
         }
     }

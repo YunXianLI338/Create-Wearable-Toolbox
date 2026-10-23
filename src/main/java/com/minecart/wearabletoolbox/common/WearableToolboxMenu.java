@@ -162,6 +162,9 @@ public class WearableToolboxMenu extends ToolboxMenu {
         } else {
             player.setItemSlot(EquipmentSlot.CHEST, stack);
         }
+        if (player instanceof ServerPlayer serverPlayer) {
+            WearableToolboxBindings.syncToolbox(serverPlayer, curioSlot, stack);
+        }
     }
 
     /**
@@ -206,6 +209,7 @@ public class WearableToolboxMenu extends ToolboxMenu {
             stack.set(AllDataComponents.TOOLBOX_UUID, UUID.randomUUID());
         }
         EquippedToolbox.set(player, equipped.curioSlot(), stack);
+        WearableToolboxBindings.syncToolbox(player, equipped.curioSlot(), stack);
         player.getInventory().setChanged();
     }
 

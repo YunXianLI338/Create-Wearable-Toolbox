@@ -2,6 +2,7 @@ package com.minecart.wearabletoolbox;
 
 import com.minecart.wearabletoolbox.common.DepositAllPayload;
 import com.minecart.wearabletoolbox.common.OpenToolboxPayload;
+import com.minecart.wearabletoolbox.common.SyncToolboxPayload;
 import com.minecart.wearabletoolbox.common.WearableToolboxBindPayload;
 import com.minecart.wearabletoolbox.common.WearableToolboxMenu;
 import com.mojang.logging.LogUtils;
@@ -64,6 +65,11 @@ public class WearableToolbox {
                 DepositAllPayload.TYPE,
                 DepositAllPayload.STREAM_CODEC,
                 DepositAllPayload::handle
+        );
+        registrar.playToClient(
+                SyncToolboxPayload.TYPE,
+                SyncToolboxPayload.STREAM_CODEC,
+                SyncToolboxPayload::handle
         );
     }
 }
