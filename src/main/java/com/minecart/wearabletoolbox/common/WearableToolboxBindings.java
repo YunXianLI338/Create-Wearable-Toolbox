@@ -9,6 +9,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.List;
@@ -32,6 +33,16 @@ public final class WearableToolboxBindings {
 
     private static CompoundTag root(ServerPlayer player) {
         return player.getPersistentData().getCompound(DATA_KEY);
+    }
+
+    /**
+     * 当前快捷栏槽位是否已绑定隔间。客户端的持久化数据由 Create 的 syncData 同步，
+     * 因此这里可以安全地在客户端读取。
+     */
+    public static boolean hasBinding(Player player, int hotbarSlot) {
+        return player.getPersistentData()
+                .getCompound(DATA_KEY)
+                .contains(String.valueOf(hotbarSlot));
     }
 
     private static void saveRoot(ServerPlayer player, CompoundTag root) {

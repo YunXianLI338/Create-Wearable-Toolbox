@@ -168,12 +168,45 @@ public class WearableToolboxMenu extends ToolboxMenu {
      * 把玩家背包里能放进工具箱的物品全部存入当前打开的工具箱。
      */
     public static void depositAll(ServerPlayer player) {
-        if (!(player.containerMenu instanceof WearableToolboxMenu menu)) {
+        if (player.containerMenu instanceof WearableToolboxMenu menu) {
+            ToolboxInventory inventory = ((ToolboxBlockEntityAccess) (Object) menu.contentHolder)
+                    .wearableToolbox$inventory();
+            if (!depositInto(player, inventory)) {
+                return;
+            }
+
+            ItemStack stack = menu.curioSlot >= 0
+                    ? CuriosCompat.getBody(player, menu.curioSlot)
+                    : player.getItemBySlot(EquipmentSlot.CHEST);
+            if (ToolboxItems.isToolbox(stack)) {
+                menu.writeToEquipped(menu.contentHolder, stack);
+            }
+            player.getInventory().setChanged();
+            menu.broadcastChanges();
             return;
         }
 
-        ToolboxInventory inventory = ((ToolboxBlockEntityAccess) (Object) menu.contentHolder)
-                .wearableToolbox$inventory();
+        // 径向菜单没有 containerMenu，直接操作当前穿戴的工具箱物品。
+        EquippedToolbox equipped = EquippedToolbox.find(player);
+        if (equipped == null) {
+            return;
+        }
+
+        ItemStack stack = equipped.stack();
+        ToolboxInventory inventory = stack.get(AllDataComponents.TOOLBOX_INVENTORY);
+        if (inventory == null || !depositInto(player, inventory)) {
+            return;
+        }
+
+        stack.set(AllDataComponents.TOOLBOX_INVENTORY, inventory);
+        if (!stack.has(AllDataComponents.TOOLBOX_UUID)) {
+            stack.set(AllDataComponents.TOOLBOX_UUID, UUID.randomUUID());
+        }
+        EquippedToolbox.set(player, equipped.curioSlot(), stack);
+        player.getInventory().setChanged();
+    }
+
+    private static boolean depositInto(ServerPlayer player, ToolboxInventory inventory) {
         MutableBoolean changed = new MutableBoolean(false);
         inventory.inLimitedMode(handler -> {
             for (int slot = 0; slot < 36; slot++) {
@@ -188,16 +221,7 @@ public class WearableToolboxMenu extends ToolboxMenu {
                 }
             }
         });
-
-        if (changed.isTrue()) {
-            ItemStack stack = menu.curioSlot >= 0
-                    ? CuriosCompat.getBody(player, menu.curioSlot)
-                    : player.getItemBySlot(EquipmentSlot.CHEST);
-            if (ToolboxItems.isToolbox(stack)) {
-                menu.writeToEquipped(menu.contentHolder, stack);
-            }
-            player.getInventory().setChanged();
-        }
+        return changed.isTrue();
     }
 
     @Override

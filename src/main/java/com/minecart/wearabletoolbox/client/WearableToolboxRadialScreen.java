@@ -1,6 +1,8 @@
 package com.minecart.wearabletoolbox.client;
 
+import com.minecart.wearabletoolbox.common.DepositAllPayload;
 import com.minecart.wearabletoolbox.common.WearableToolboxBindPayload;
+import com.minecart.wearabletoolbox.common.WearableToolboxBindings;
 import com.minecart.wearabletoolbox.common.WearableToolboxMenu;
 import com.minecart.wearabletoolbox.mixin.RadialToolboxMenuAccess;
 import com.minecart.wearabletoolbox.mixin.ToolboxBlockEntityAccess;
@@ -25,8 +27,13 @@ import java.util.List;
  * {@code ToolboxEquipPacket}。</p>
  */
 public final class WearableToolboxRadialScreen extends RadialToolboxMenu {
-    private WearableToolboxRadialScreen(ToolboxBlockEntity toolbox) {
-        super(List.of(toolbox), State.SELECT_ITEM_UNEQUIP, toolbox);
+    private static final int UNEQUIP = -5;
+    private static final int DEPOSIT = -7;
+
+    private WearableToolboxRadialScreen(ToolboxBlockEntity toolbox, boolean bound) {
+        // 只有当前快捷栏已经绑定隔间时才显示中心的“解除绑定”槽位；
+        // 否则与原版首次打开一样使用 SELECT_ITEM，避免出现“收回: 空气”。
+        super(List.of(toolbox), bound ? State.SELECT_ITEM_UNEQUIP : State.SELECT_ITEM, toolbox);
     }
 
     /**
@@ -34,7 +41,8 @@ public final class WearableToolboxRadialScreen extends RadialToolboxMenu {
      */
     public static void open(ItemStack stack, Player player) {
         ToolboxBlockEntity toolbox = WearableToolboxMenu.createVirtualBlockEntity(stack, player);
-        ScreenOpener.open(new WearableToolboxRadialScreen(toolbox));
+        boolean bound = WearableToolboxBindings.hasBinding(player, player.getInventory().selected);
+        ScreenOpener.open(new WearableToolboxRadialScreen(toolbox, bound));
     }
 
     @Override
@@ -50,7 +58,11 @@ public final class WearableToolboxRadialScreen extends RadialToolboxMenu {
                 ? access.wearableToolbox$scrollSlot()
                 : access.wearableToolbox$hoveredSlot();
 
-        if (selected == -5) {
+        if (selected == DEPOSIT) {
+            PacketDistributor.sendToServer(new DepositAllPayload());
+            return;
+        }
+        if (selected == UNEQUIP) {
             send(-1, minecraft.player);
             return;
         }
