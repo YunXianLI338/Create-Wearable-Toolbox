@@ -54,6 +54,39 @@ public final class WearableToolboxBindings {
     }
 
     /**
+     * 手动“全部存入”前解除所有快捷栏绑定，但不像 {@link #unbind} 那样把快捷栏物品搬回去。
+     *
+     * <p>Create 的 {@code ToolboxDisposeAllPacket} 也会先 unequip 指向该工具箱的快捷栏，
+     * 否则存进去的物品会在下一次 tick 被自动补充逻辑重新拿回快捷栏。</p>
+     */
+    public static void clearForDeposit(ServerPlayer player) {
+        CompoundTag root = root(player);
+        if (root.isEmpty()) {
+            return;
+        }
+
+        boolean changed = false;
+        for (String key : List.copyOf(root.getAllKeys())) {
+            if (key.length() == 1 && key.charAt(0) >= '0' && key.charAt(0) <= '8') {
+                root.remove(key);
+                changed = true;
+            }
+        }
+        if (!changed) {
+            return;
+        }
+
+        boolean hasBindings = root.getAllKeys().stream()
+                .anyMatch(key -> key.length() == 1 && key.charAt(0) >= '0' && key.charAt(0) <= '8');
+        if (!hasBindings) {
+            player.getPersistentData().remove(DATA_KEY);
+        } else {
+            saveRoot(player, root);
+        }
+        ToolboxHandler.syncData(player);
+    }
+
+    /**
      * 绑定一个隔间到快捷栏。与 Create 一致：不立即搬动当前物品，而是在 tick 中补充/回收。
      */
     public static void bind(ServerPlayer player, int hotbarSlot, int compartment) {

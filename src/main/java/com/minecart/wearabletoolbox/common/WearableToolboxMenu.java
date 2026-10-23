@@ -174,6 +174,8 @@ public class WearableToolboxMenu extends ToolboxMenu {
             if (!depositInto(player, inventory)) {
                 return;
             }
+            // 与 Create 的 ToolboxDisposeAllPacket 一致：先解除绑定，防止 tick 又把物品补回快捷栏。
+            WearableToolboxBindings.clearForDeposit(player);
 
             ItemStack stack = menu.curioSlot >= 0
                     ? CuriosCompat.getBody(player, menu.curioSlot)
@@ -197,6 +199,7 @@ public class WearableToolboxMenu extends ToolboxMenu {
         if (inventory == null || !depositInto(player, inventory)) {
             return;
         }
+        WearableToolboxBindings.clearForDeposit(player);
 
         stack.set(AllDataComponents.TOOLBOX_INVENTORY, inventory);
         if (!stack.has(AllDataComponents.TOOLBOX_UUID)) {
