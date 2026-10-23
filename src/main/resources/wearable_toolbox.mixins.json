@@ -4,7 +4,7 @@
   "package": "com.minecart.wearabletoolbox.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
-    "ArmorSlotMixin",
+    "LivingEntityMixin",
     "ToolboxBlockEntityAccess",
     "ToolboxInventoryAccess"
   ],

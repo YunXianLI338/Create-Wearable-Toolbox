@@ -1,7 +1,6 @@
 package com.minecart.wearabletoolbox.client;
 
 import com.minecart.wearabletoolbox.WearableToolbox;
-import com.minecart.wearabletoolbox.common.EquipToolboxPayload;
 import com.minecart.wearabletoolbox.common.EquippedToolbox;
 import com.minecart.wearabletoolbox.common.OpenToolboxPayload;
 import com.minecart.wearabletoolbox.common.ToolboxItems;
@@ -9,12 +8,10 @@ import com.simibubi.create.AllDataComponents;
 import com.simibubi.create.AllItems;
 import com.simibubi.create.AllKeys;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.entity.ArmorStandRenderer;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.decoration.ArmorStand;
-import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GameType;
 import net.neoforged.api.distmarker.Dist;
@@ -23,7 +20,6 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.InputEvent;
 import net.neoforged.neoforge.client.event.RenderLivingEvent;
-import net.neoforged.neoforge.client.event.ScreenEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.lwjgl.glfw.GLFW;
 
@@ -94,46 +90,6 @@ public final class WearableToolboxClientEvents {
         ItemStack mainHand = player.getMainHandItem();
         return AllItems.SCHEMATIC.isIn(mainHand)
                 && mainHand.has(AllDataComponents.SCHEMATIC_FILE);
-    }
-
-    /**
-     * 物品栏里 Shift + 左键/右键工具箱：快捷穿到胸甲栏。
-     *
-     * <p>原版 {@code InventoryMenu#quickMoveStack} 只对 {@code getEquipmentSlotForItem}
-     * 返回盔甲槽的物品自动穿戴；工具箱是 BlockItem，这个方法返回主手，所以需要在这里
-     * 自己拦截 Shift 点击。只拦截玩家物品栏界面，工作台、箱子等工作台 GUI 仍走原版
-     * 快速移动逻辑，避免把工具箱穿到身上而不是放进容器。</p>
-     */
-    @SubscribeEvent
-    public static void onMousePressed(ScreenEvent.MouseButtonPressed.Pre event) {
-        if (event.getButton() != GLFW.GLFW_MOUSE_BUTTON_LEFT
-                && event.getButton() != GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
-            return;
-        }
-
-        Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player == null || !(event.getScreen() instanceof AbstractContainerScreen<?> screen)
-                || !screen.hasShiftDown()) {
-            return;
-        }
-
-        // 与原版盔甲一致：胸甲栏已有物品时不强行替换，交给原版 Shift 点击处理。
-        if (!minecraft.player.getItemBySlot(EquipmentSlot.CHEST).isEmpty()) {
-            return;
-        }
-
-        Slot slot = screen.getSlotUnderMouse();
-        if (slot == null || slot.container != minecraft.player.getInventory()) {
-            return;
-        }
-
-        int index = slot.getContainerSlot();
-        if (index < 0 || index >= 36 || !ToolboxItems.isToolbox(slot.getItem())) {
-            return;
-        }
-
-        PacketDistributor.sendToServer(new EquipToolboxPayload(index));
-        event.setCanceled(true);
     }
 
     /**

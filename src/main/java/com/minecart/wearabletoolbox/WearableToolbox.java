@@ -1,7 +1,6 @@
 package com.minecart.wearabletoolbox;
 
 import com.minecart.wearabletoolbox.common.DepositAllPayload;
-import com.minecart.wearabletoolbox.common.EquipToolboxPayload;
 import com.minecart.wearabletoolbox.common.OpenToolboxPayload;
 import com.minecart.wearabletoolbox.common.WearableToolboxBindPayload;
 import com.minecart.wearabletoolbox.common.WearableToolboxMenu;
@@ -65,11 +64,6 @@ public class WearableToolbox {
                 DepositAllPayload.TYPE,
                 DepositAllPayload.STREAM_CODEC,
                 DepositAllPayload::handle
-        );
-        registrar.playToServer(
-                EquipToolboxPayload.TYPE,
-                EquipToolboxPayload.STREAM_CODEC,
-                EquipToolboxPayload::handle
         );
     }
 }
