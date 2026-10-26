@@ -23,6 +23,15 @@ public record EquippedToolbox(ItemStack stack, int curioSlot) {
         return curioSlot >= 0;
     }
 
+    /**
+     * 工具箱在当前装备槽位上是否应渲染模型。
+     *
+     * <p>原版胸甲栏始终渲染；Curios 槽位遵循 Curios 的“隐藏饰品”开关。</p>
+     */
+    public boolean isVisibleOn(Player player) {
+        return !isCurio() || CuriosCompat.isBodySlotVisible(player, curioSlot);
+    }
+
     @Nullable
     public static EquippedToolbox find(Player player) {
         ItemStack chest = player.getItemBySlot(EquipmentSlot.CHEST);

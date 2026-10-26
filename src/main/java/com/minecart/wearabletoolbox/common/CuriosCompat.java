@@ -68,4 +68,22 @@ final class CuriosCompat {
         IDynamicStackHandler stacks = handler.get().getStacks();
         return slot >= 0 && slot < stacks.getSlots() ? stacks.getStackInSlot(slot) : ItemStack.EMPTY;
     }
+
+    /**
+     * Curios 的“隐藏饰品”开关在当前槽位上是否允许渲染。
+     *
+     * <p>没有对应槽位或数据时返回 {@code true}，避免因为数据缺失误把模型藏掉。</p>
+     */
+    static boolean isBodySlotVisible(Player player, int slot) {
+        Optional<ICuriosItemHandler> curios = CuriosApi.getCuriosInventory(player);
+        if (curios.isEmpty()) {
+            return true;
+        }
+        Optional<ICurioStacksHandler> handler = curios.get().getStacksHandler(EquippedToolbox.CURIO_SLOT);
+        if (handler.isEmpty()) {
+            return true;
+        }
+        var renders = handler.get().getRenders();
+        return renders.size() <= slot || renders.get(slot);
+    }
 }

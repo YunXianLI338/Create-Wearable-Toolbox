@@ -90,7 +90,7 @@ public final class ToolboxArmorLayer extends RenderLayer<AbstractClientPlayer, P
                        float limbSwing, float limbSwingAmount, float partialTick, float ageInTicks,
                        float netHeadYaw, float headPitch) {
         EquippedToolbox equipped = EquippedToolbox.find(player);
-        if (equipped == null) {
+        if (equipped == null || !equipped.isVisibleOn(player)) {
             return;
         }
 
