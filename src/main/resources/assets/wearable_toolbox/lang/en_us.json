@@ -7,5 +7,9 @@
   "tooltip.wearable_toolbox.quick_equip": "Shift + left-click to equip",
   "tooltip.wearable_toolbox.deposit_all": "Return items to the toolbox",
   "message.wearable_toolbox.bound": "Bound: %s",
-  "message.wearable_toolbox.unbound": "Hotbar binding cleared"
+  "message.wearable_toolbox.unbound": "Hotbar binding cleared",
+  "wearable_toolbox.configuration.手臂前伸": "Pose Arms",
+  "wearable_toolbox.configuration.手臂前伸.tooltip": "Whether the local player raises both arms while a wearable toolbox screen is open.",
+  "wearable_toolbox.configuration.低头": "Lower Head",
+  "wearable_toolbox.configuration.低头.tooltip": "Whether the local player looks down while a wearable toolbox screen is open."
 }

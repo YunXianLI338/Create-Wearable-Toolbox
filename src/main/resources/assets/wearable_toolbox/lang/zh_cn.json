@@ -7,5 +7,9 @@
   "tooltip.wearable_toolbox.quick_equip": "Shift + 左键快速穿戴",
   "tooltip.wearable_toolbox.deposit_all": "把物品收回工具箱",
   "message.wearable_toolbox.bound": "已绑定：%s",
-  "message.wearable_toolbox.unbound": "已解除快捷栏绑定"
+  "message.wearable_toolbox.unbound": "已解除快捷栏绑定",
+  "wearable_toolbox.configuration.手臂前伸": "手臂前伸",
+  "wearable_toolbox.configuration.手臂前伸.tooltip": "打开可穿戴工具箱界面时，是否让本地玩家双臂向前伸出。",
+  "wearable_toolbox.configuration.低头": "低头",
+  "wearable_toolbox.configuration.低头.tooltip": "打开可穿戴工具箱界面时，是否让本地玩家朝身体正前方低头。"
 }

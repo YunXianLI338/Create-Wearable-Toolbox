@@ -57,6 +57,15 @@ public final class WearableToolboxClient {
         event.register(WearableToolbox.TOOLBOX_MENU.get(), WearableToolboxScreen::new);
     }
 
+    /**
+     * 当前是否打开了可穿戴工具箱的两种界面之一。
+     */
+    public static boolean isToolboxScreenOpen() {
+        Minecraft minecraft = Minecraft.getInstance();
+        return minecraft.screen instanceof WearableToolboxScreen
+                || minecraft.screen instanceof WearableToolboxRadialScreen;
+    }
+
     @SubscribeEvent
     public static void addLayers(EntityRenderersEvent.AddLayers event) {
         for (PlayerSkin.Model skin : event.getSkins()) {

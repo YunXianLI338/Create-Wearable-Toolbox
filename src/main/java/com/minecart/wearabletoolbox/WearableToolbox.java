@@ -8,8 +8,14 @@ import com.minecart.wearabletoolbox.common.WearableToolboxMenu;
 import com.mojang.logging.LogUtils;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.inventory.MenuType;
+import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.config.ModConfig;
+import net.neoforged.fml.loading.FMLEnvironment;
+import net.neoforged.neoforge.client.gui.ConfigurationScreen;
+import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
@@ -41,7 +47,13 @@ public class WearableToolbox {
     public static final DeferredHolder<MenuType<?>, MenuType<WearableToolboxMenu>> TOOLBOX_MENU =
             MENUS.register("toolbox", () -> IMenuTypeExtension.create(WearableToolboxMenu::new));
 
-    public WearableToolbox(IEventBus modEventBus) {
+    public WearableToolbox(IEventBus modEventBus, ModContainer modContainer) {
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            modContainer.registerConfig(ModConfig.Type.CLIENT, WearableToolboxConfig.SPEC);
+            modContainer.registerExtensionPoint(IConfigScreenFactory.class,
+                    (container, parent) -> new ConfigurationScreen(container, parent));
+        }
+
         MENUS.register(modEventBus);
         modEventBus.addListener(WearableToolbox::registerPayloads);
 

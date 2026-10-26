@@ -9,6 +9,7 @@
     "ToolboxInventoryAccess"
   ],
   "client": [
+    "PlayerModelMixin",
     "RadialToolboxMenuAccess",
     "ToolboxHandlerClientMixin"
   ],

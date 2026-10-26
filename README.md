@@ -36,10 +36,24 @@
    - 已绑定的快捷栏槽位会显示 Create 同款黄铜色边框，选中槽位边框样式与放置版一致。
    - 玩家身上有工具箱时，即使附近有放置版工具箱也优先打开可穿戴版。
 4. 按 `V`（可修改）打开完整界面：8 个隔间、每格 4 槽、过滤器、快速移动与堆叠整理；界面左侧的“把物品收回工具箱”按钮会把背包里能放入的物品全部存入。关闭时内容写回物品。
-5. 身上的展示模型使用工具箱本身的颜色贴图；打开 `V` 界面或径向菜单时切换为打开盖子的版本，关闭后恢复。
+5. 身上的展示模型使用工具箱本身的颜色贴图；打开 `V` 界面或径向菜单时切换为打开盖子的版本，关闭后恢复。打开界面时双臂会向前伸出并朝正前方低头，姿势参考 WATUT 的 GUI 动作；这两个动作可在客户端配置中分别关闭。
 6. 手持工具箱右键 **盔甲架**，可把它放到盔甲架的胸甲槽，原有胸甲退回背包。
 
 内容保存在物品的 `create:toolbox_inventory` 组件中，掉落后不会丢失。绑定数据保存在玩家的 `WearableToolboxData` 持久化 NBT 中，换下工具箱或隔间清空时自动解除。
+
+## 配置
+
+客户端首次启动后生成 `config/wearable_toolbox-client.toml`；也可以在 **Mods → Wearable Toolbox → Config** 中打开配置界面：
+
+- `"手臂前伸" = true`：打开穿戴版工具箱界面时，双臂向前伸出。
+- `"低头" = true`：打开穿戴版工具箱界面时，朝身体正前方低头。
+
+```toml
+"手臂前伸" = true
+"低头" = true
+```
+
+两个选项互不影响，设为 `false` 即可关闭对应动作。
 
 ## 构建与运行
 
@@ -54,7 +68,7 @@ gradlew.bat runData
 ./gradlew build
 ```
 
-- 构建产物：`build/libs/wearable_toolbox-0.1.0.jar`，放入客户端 `mods/` 即可。
+- 构建产物：`build/libs/wearable_toolbox-0.1.2.jar`，放入客户端 `mods/` 即可。
 - 若网络无法访问 `maven.neoforged.net`，可改用 `gradlew.bat build --offline`；本机 Gradle 缓存中已有 21.1.248 全套依赖。
 - 首次构建会下载 Gradle、NeoForge 并执行 NeoForm 反编译，耗时较长（网络慢时可达一小时），日志暂时没有输出并不代表卡死。
 - `runServer` 首次启动后需把 `run/eula.txt` 改为 `eula=true`；局域网调试可再把 `server.properties` 的 `online-mode` 设为 `false`。
@@ -81,6 +95,7 @@ wearable_toolbox/
 ├─ settings.gradle                  # 插件仓库与根项目名
 ├─ src/main/java/com/minecart/wearabletoolbox/
 │  ├─ WearableToolbox.java          # @Mod 主类、菜单与网络注册
+│  ├─ WearableToolboxConfig.java    # 客户端配置（手臂/低头开关）
 │  ├─ WearableToolboxEvents.java    # 物品提示
 │  ├─ WearableToolboxServerEvents.java # 快捷栏绑定/自动补充 tick
 │  ├─ client/                       # 按键、界面、径向菜单与客户端事件
