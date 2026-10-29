@@ -2,11 +2,12 @@
 
 [中文](CHANGELOG.md)
 
-## 0.1.3 — 2026-10-29
+## 0.1.3-hotfix — 2026-10-29
 
 ### Fixed
 
 - Fixed the toolbox on an armor stand not rotating with the stand.
+- Fixed a dedicated-server startup failure caused by loading the client-only configuration screen class.
 
 ## 0.1.2 — 2026-10-27
 

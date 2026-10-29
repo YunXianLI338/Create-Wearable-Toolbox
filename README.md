@@ -68,7 +68,7 @@ gradlew.bat runData
 ./gradlew build
 ```
 
-- 构建产物：`build/libs/wearable_toolbox-0.1.3.jar`，放入客户端 `mods/` 即可。
+- 构建产物：`build/libs/wearable_toolbox-0.1.3-hotfix.jar`，放入客户端 `mods/` 即可。
 - 若网络无法访问 `maven.neoforged.net`，可改用 `gradlew.bat build --offline`；本机 Gradle 缓存中已有 21.1.248 全套依赖。
 - 首次构建会下载 Gradle、NeoForge 并执行 NeoForm 反编译，耗时较长（网络慢时可达一小时），日志暂时没有输出并不代表卡死。
 - `runServer` 首次启动后需把 `run/eula.txt` 改为 `eula=true`；局域网调试可再把 `server.properties` 的 `online-mode` 设为 `false`。

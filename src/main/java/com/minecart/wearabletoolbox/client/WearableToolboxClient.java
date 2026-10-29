@@ -24,11 +24,16 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.level.GameType;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
+import net.neoforged.neoforge.client.gui.ConfigurationScreen;
+import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.lwjgl.glfw.GLFW;
@@ -45,6 +50,23 @@ public final class WearableToolboxClient {
     );
 
     private WearableToolboxClient() {
+    }
+
+    /**
+     * 客户端专用初始化：注册 Mods 菜单里的配置界面。
+     *
+     * <p>这段不能放在 {@link WearableToolbox} 主类里，否则专用服务端加载主类时会解析到
+     * {@code ConfigurationScreen} 等客户端类。</p>
+     */
+    @SubscribeEvent
+    public static void registerConfigScreen(FMLClientSetupEvent event) {
+        event.enqueueWork(() -> {
+            ModContainer container = ModList.get()
+                    .getModContainerById(WearableToolbox.MODID)
+                    .orElseThrow();
+            container.registerExtensionPoint(IConfigScreenFactory.class,
+                    (mod, parent) -> new ConfigurationScreen(mod, parent));
+        });
     }
 
     @SubscribeEvent
