@@ -19,7 +19,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(LivingEntity.class)
 public abstract class LivingEntityMixin {
     @Inject(method = "getEquipmentSlotForItem", at = @At("HEAD"), cancellable = true)
-    private void wearableToolbox$useChestSlot(ItemStack stack, CallbackInfoReturnable<EquipmentSlot> cir) {
+    private static void wearableToolbox$useChestSlot(ItemStack stack, CallbackInfoReturnable<EquipmentSlot> cir) {
         if (ToolboxItems.isToolbox(stack)) {
             cir.setReturnValue(EquipmentSlot.CHEST);
         }
