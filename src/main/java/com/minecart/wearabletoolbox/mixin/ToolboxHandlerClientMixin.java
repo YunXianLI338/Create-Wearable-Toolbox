@@ -18,7 +18,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  */
 @Mixin(ToolboxHandlerClient.class)
 public final class ToolboxHandlerClientMixin {
-    @Inject(method = "onKeyInput", at = @At("HEAD"), cancellable = true)
+    // Create 不是 Minecraft，方法名不会被混淆，因此不需要（也无法）生成 refmap 映射。
+    @Inject(method = "onKeyInput", at = @At("HEAD"), cancellable = true, remap = false)
     private static void wearableToolbox$skipCreateMenu(int key, boolean pressed, CallbackInfo callback) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player != null && EquippedToolbox.find(minecraft.player) != null) {

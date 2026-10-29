@@ -1,8 +1,10 @@
 # 可穿戴的工具箱（Wearable Toolbox）
 
-**Minecraft 1.21.1 · NeoForge · MIT**
+**Minecraft 1.20.1 · Forge · MIT**
 
 把机械动力的工具箱装备到胸甲栏或 Curios 的胸饰栏：按 `V` 打开 8 隔间界面，或按住 `Alt` 打开与放置版一致的径向菜单，把隔间绑定到快捷栏并自动补充。打开界面时展示模型会切换为打开盖子的版本。Curios 为可选前置，不安装也能运行。
+
+> 这是 **1.20.1（Forge）** 版本；1.21.1（NeoForge）版本见 `main` 分支。
 
 ---
 
@@ -10,20 +12,21 @@
 
 | 项目 | 版本 |
 | --- | --- |
-| Minecraft | 1.21.1 |
-| NeoForge | 21.1.248（`[21.1,)`） |
-| ModDevGradle | 2.0.143 |
+| Minecraft | 1.20.1 |
+| Forge | 47.3.0（`[47,)`） |
+| ForgeGradle | 6.0.24 |
 | Gradle Wrapper | 8.8 |
-| Java | 21 |
-| Parchment | 2024.11.17 |
-| 机械动力 Create | 6.0.10（`[6.0.10,)`） |
-| Curios API | 9.5.1+1.21.1（可选，不安装也能运行） |
+| Java | 17 |
+| 映射 | official 1.20.1（Mojang 官方名，未加 Parchment） |
+| 机械动力 Create | 6.0.8（`[6.0.8,)`，Maven 版本 `6.0.8-291`） |
+| Curios API | 5.14.1+1.20.1（可选，不安装也能运行） |
 
 ### 前置模组
 
-- **机械动力 Create 6.0.10（必需）**：编译期依赖 `com.simibubi.create:create-1.21.1:6.0.10-280`，其 jarjar 已内置 Ponder、Flywheel、Registrate。
-- **Curios API 9.5.1+1.21.1（可选）**：安装后可把工具箱放进 **胸饰（body）** 饰品栏；未安装时只使用原版胸甲栏。Curios 相关调用做了加载检查，不会因缺少前置而崩溃。
-- 本地开发环境 `run/mods` 保留了 `create-1.21.1-6.0.10.jar` 与 `curios-neoforge-9.5.1+1.21.1.jar`。
+- **机械动力 Create 6.0.8（必需）**：运行时要装 `create-1.20.1-6.0.8-291-all.jar`（jarjar 全量版，自带 Ponder、Flywheel、Registrate）。
+- **编译期**：`create-1.20.1:6.0.8-291:slim` 不含打包依赖库，因此额外声明 `Ponder-Forge-1.20.1:1.0.91`、`flywheel-forge-api-1.20.1:1.0.6-beta-266`、`Registrate:MC1.20-1.3.3`。Ponder 的 jar 内已包含 Catnip，不需要单独的 Catnip 依赖。
+- **Curios API 5.14.1+1.20.1（可选）**：安装后可把工具箱放进 **胸饰（body）** 饰品栏；未安装时只使用原版胸甲栏。Curios 相关调用做了加载检查，不会因缺少前置而崩溃。
+- Create 系依赖必须用 `fg.deobf(...)` 包一层：发布的 mod jar 是 SRG 名，而 ForgeGradle 6 的开发 classpath 是 official 名，不 deobf 会编译失败。
 
 ## 玩法
 
@@ -39,21 +42,31 @@
 5. 身上的展示模型使用工具箱本身的颜色贴图；打开 `V` 界面或径向菜单时切换为打开盖子的版本，关闭后恢复。打开界面时双臂会向前伸出并朝正前方低头，姿势参考 WATUT 的 GUI 动作；这两个动作可在客户端配置中分别关闭。
 6. 手持工具箱右键 **盔甲架**，可把它放到盔甲架的胸甲槽，原有胸甲退回背包。
 
-内容保存在物品的 `create:toolbox_inventory` 组件中，掉落后不会丢失。绑定数据保存在玩家的 `WearableToolboxData` 持久化 NBT 中，换下工具箱或隔间清空时自动解除。
+1.20.1 没有数据组件，内容保存在物品 NBT 的 `Inventory` 标签里，写入方式与放置版一致，掉落后不会丢失。绑定数据保存在玩家的 `WearableToolboxData` 持久化 NBT 中，换下工具箱或隔间清空时自动解除。
 
 ## 配置
 
-客户端首次启动后生成 `config/wearable_toolbox-client.toml`；也可以在 **Mods → Wearable Toolbox → Config** 中打开配置界面：
-
-- `"手臂前伸" = true`：打开穿戴版工具箱界面时，玩家双臂向前伸出。
-- `"低头" = true`：打开穿戴版工具箱界面时，玩家朝身体正前方低头。
+客户端首次启动后生成 `config/wearable_toolbox-client.toml`。Forge 1.20.1 没有内置的模组配置界面，直接编辑该文件（或使用第三方配置模组）：
 
 ```toml
-"手臂前伸" = true
-"低头" = true
+pose_arms = true
+lower_head = true
 ```
 
+- `pose_arms`：打开穿戴版工具箱界面时，玩家双臂向前伸出。
+- `lower_head`：打开穿戴版工具箱界面时，玩家朝身体正前方低头。
+
 两个选项互不影响，设为 `false` 即可关闭对应动作。动作与开盖模型会同步给附近玩家；配置只控制手臂与低头动作是否渲染。
+
+## 与 1.21.1 版本的差异
+
+| 项目 | 1.20.1（本分支） | 1.21.1（`main`） |
+| --- | --- | --- |
+| 加载器 / Java | Forge 47 / Java 17 | NeoForge 21.1 / Java 21 |
+| 物品库存 | 物品 NBT 的 `Inventory` 标签 | `create:toolbox_inventory` 数据组件 |
+| 网络层 | Forge `SimpleChannel` | `CustomPacketPayload` + `StreamCodec` |
+| 配置 | `ForgeConfigSpec`，仅文件 | `ModConfigSpec`，带游戏内界面 |
+| 配置键 | `pose_arms` / `lower_head` | `手臂前伸` / `低头` |
 
 ## 构建与运行
 
@@ -68,55 +81,55 @@ gradlew.bat runData
 ./gradlew build
 ```
 
-- 构建产物：`build/libs/wearable_toolbox-0.1.2.jar`，放入客户端 `mods/` 即可。
-- 若网络无法访问 `maven.neoforged.net`，可改用 `gradlew.bat build --offline`；本机 Gradle 缓存中已有 21.1.248 全套依赖。
-- 首次构建会下载 Gradle、NeoForge 并执行 NeoForm 反编译，耗时较长（网络慢时可达一小时），日志暂时没有输出并不代表卡死。
+- 构建产物：`build/libs/wearable_toolbox-0.1.3.jar`，放入客户端 `mods/` 即可。
+- `libs/maven` 是本地预置依赖仓库（构建时优先命中，缺失时自动回落远程仓库）。网络慢时可先用浏览器或 `curl` 把依赖 jar 放进 `libs/maven/<group>/<artifact>/<version>/`，并在同目录手写一个 `<packaging>jar</packaging>` 的最小 pom。该目录不进版本库。
+- 首次构建会下载 Forge MDK 并执行反编译（ForgeGradle 的 `setup` 阶段），耗时较长；日志暂时没有输出并不代表卡死。
+- `runClient` / `runServer` 前需把 Create 与 Curios 的 jar 放进 `run/mods/`（`create-1.20.1-6.0.8-291-all.jar`、`curios-forge-5.14.1+1.20.1.jar`）。
 - `runServer` 首次启动后需把 `run/eula.txt` 改为 `eula=true`；局域网调试可再把 `server.properties` 的 `online-mode` 设为 `false`。
 - `runData` 的输出写入 `src/generated/resources`，该目录已挂进资源源集；不要手改生成文件，改数据生成器后重跑。
 
 ### 在 IDEA 中运行
 
-项目已配置为使用 Gradle Wrapper 8.8，Gradle JVM 取 `#JAVA_HOME`（需为 JDK 21）。IDEA 运行配置里新增了四个 Gradle 任务，直接复用项目构建，不需要手写 `build/moddev` 下的参数文件：
+项目使用 Gradle Wrapper 8.8，Gradle JVM 取 `#JAVA_HOME`；编译工具链固定为 **Java 17**，本机需装有 JDK 17（可在 `~/.gradle/gradle.properties` 里用 `org.gradle.java.installations.paths` 指向它）。运行配置可直接复用 Gradle 任务：
 
 - `Client (Gradle)` → `runClient`
 - `Server (Gradle)` → `runServer`
 - `Data (Gradle)` → `runData`
 - `Build (Gradle)` → `build`
 
-如果 Gradle 工具窗提示 `Gradle build daemon has been stopped: stop command received`，点一次 **Reload All Gradle Projects** 即可；在 IDEA 打开项目期间不要执行 `gradlew --stop`，它会连同 IDEA 使用的 daemon 一起停掉。
-
-
 ## 目录结构
 
 ```
 wearable_toolbox/
-├─ build.gradle                     # ModDevGradle、运行配置、资源展开
-├─ gradle.properties                # MC/NeoForge/Parchment 版本与模组元数据
+├─ build.gradle                     # ForgeGradle 6、Mixin、依赖与资源展开
+├─ gradle.properties                # MC/Forge/Create 版本与模组元数据
 ├─ settings.gradle                  # 插件仓库与根项目名
+├─ libs/maven/                      # 本地预置依赖（可选，不进版本库）
 ├─ src/main/java/com/minecart/wearabletoolbox/
-│  ├─ WearableToolbox.java          # @Mod 主类、菜单与网络注册
-│  ├─ WearableToolboxConfig.java    # 客户端配置（手臂/低头开关）
-│  ├─ WearableToolboxEvents.java    # 物品提示
+│  ├─ WearableToolbox.java          # @Mod 主类、菜单注册
+│  ├─ WearableToolboxConfig.java    # ForgeConfigSpec 客户端配置
+│  ├─ WearableToolboxEvents.java    # 物品提示、盔甲架交互
 │  ├─ WearableToolboxServerEvents.java # 快捷栏绑定/自动补充 tick
-│  ├─ client/                       # 按键、界面、径向菜单与客户端事件
-│  ├─ common/                       # 菜单、网络包、绑定数据、工具箱判定
+│  ├─ client/                       # 按键、界面、径向菜单、客户端事件与渲染
+│  ├─ common/                       # 菜单、网络、存储、绑定数据、工具箱判定
 │  └─ mixin/                        # 胸甲栏限制、Create 库存/径向菜单访问器
 ├─ src/main/resources/
-│  ├─ META-INF/neoforge.mods.toml   # 1.21.1 形态（含 modLoader / loaderVersion）
-│  ├─ wearable_toolbox.mixins.json  # Mixin 配置
+│  ├─ META-INF/mods.toml            # Forge 元数据（含 [[mixins]] 与依赖声明）
+│  ├─ pack.mcmeta                   # pack_format 15
+│  ├─ wearable_toolbox.mixins.json  # Mixin 配置（JAVA_17 + refmap）
 │  ├─ assets/wearable_toolbox/      # 语言文件与 brown / brown_on 展示模型
 │  ├─ data/curios/                  # 胸饰槽物品标签（Curios 可选）
 │  └─ data/wearable_toolbox/        # 胸饰槽实体配置（Curios 可选）
-├─ src/generated/resources/         # runData 输出（构建时生成）
 ├─ LICENSE                          # MIT
 └─ README.md
 ```
 
 ## 元数据约定
 
-- `mod_id` 为 `wearable_toolbox`，同时出现在 `gradle.properties`、`@Mod` 注解与 `neoforge.mods.toml` 三处，改动时必须同步。
-- 1.21.1 的 `neoforge.mods.toml` **必须**保留 `modLoader="javafml"` 与 `loaderVersion`，否则客户端会以 `Missing ModLoader` 拒载。
-- 前置依赖在 `neoforge.mods.toml` 的 `[[dependencies.wearable_toolbox]]` 中声明：`create [6.0.10,)` 为 `required`，`curios [9.2.2,)` 为 `optional`，均 `ordering="AFTER"`。
+- `mod_id` 为 `wearable_toolbox`，同时出现在 `gradle.properties`、`@Mod` 注解与 `META-INF/mods.toml` 三处，改动时必须同步。
+- `mods.toml` 必须保留 `modLoader="javafml"` 与 `loaderVersion="[47,)"`，否则客户端会以 `Missing ModLoader` 拒载。
+- 前置依赖在 `[[dependencies.wearable_toolbox]]` 中声明，用 `mandatory=true/false`（不是 NeoForge 的 `type=`）：`create [6.0.8,)` 必需，`curios [5.2.0,)` 可选，均 `ordering="AFTER"`。
+- Mixin 需要 refmap：针对原版方法的注入由注解处理器生成映射（`setupAnim`、`getEquipmentSlotForItem`），针对 Create 的注入要写 `remap = false`（Create 的方法名不混淆）。
 - 许可证为 MIT，作者 YunXian_LI。
 
 ## 作者与许可

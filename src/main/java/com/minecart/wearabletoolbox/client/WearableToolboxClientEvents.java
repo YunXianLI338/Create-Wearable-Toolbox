@@ -6,7 +6,7 @@ import com.minecart.wearabletoolbox.common.OpenToolboxPayload;
 import com.minecart.wearabletoolbox.common.ToolboxItems;
 import com.minecart.wearabletoolbox.common.ToolboxPosePayload;
 import com.minecart.wearabletoolbox.common.ToolboxPoseState;
-import com.simibubi.create.AllDataComponents;
+import com.minecart.wearabletoolbox.common.WearableToolboxNetwork;
 import com.simibubi.create.AllItems;
 import com.simibubi.create.AllKeys;
 import net.minecraft.client.Minecraft;
@@ -16,14 +16,14 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GameType;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.client.event.InputEvent;
-import net.neoforged.neoforge.client.event.RenderLivingEvent;
-import net.neoforged.neoforge.network.PacketDistributor;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
+import net.minecraftforge.client.event.InputEvent;
+import net.minecraftforge.client.event.RenderLivingEvent;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.eventbus.api.EventPriority;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
 import org.lwjgl.glfw.GLFW;
 
 /**
@@ -33,7 +33,7 @@ import org.lwjgl.glfw.GLFW;
  *   <li>Create 的“工具箱”键（默认左 Alt）：打开可穿戴工具箱的径向菜单。</li>
  * </ul>
  */
-@EventBusSubscriber(modid = WearableToolbox.MODID, bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)
+@Mod.EventBusSubscriber(modid = WearableToolbox.MODID, value = Dist.CLIENT)
 public final class WearableToolboxClientEvents {
     private static boolean lastPosing;
 
@@ -41,7 +41,10 @@ public final class WearableToolboxClientEvents {
     }
 
     @SubscribeEvent
-    public static void onClientTick(ClientTickEvent.Post event) {
+    public static void onClientTick(TickEvent.ClientTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) {
+            return;
+        }
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null) {
             return;
@@ -50,7 +53,7 @@ public final class WearableToolboxClientEvents {
         boolean posing = WearableToolboxClient.isToolboxScreenOpen()
                 && EquippedToolbox.find(minecraft.player) != null;
         if (posing != lastPosing) {
-            PacketDistributor.sendToServer(new ToolboxPosePayload(posing));
+            WearableToolboxNetwork.sendToServer(new ToolboxPosePayload(posing));
             lastPosing = posing;
         }
 
@@ -60,7 +63,7 @@ public final class WearableToolboxClientEvents {
 
         while (WearableToolboxClient.OPEN_TOOLBOX.consumeClick()) {
             if (EquippedToolbox.find(minecraft.player) != null) {
-                PacketDistributor.sendToServer(new OpenToolboxPayload());
+                WearableToolboxNetwork.sendToServer(new OpenToolboxPayload());
             }
         }
     }
@@ -74,7 +77,7 @@ public final class WearableToolboxClientEvents {
     /**
      * 玩家身上有工具箱时，优先于附近的放置版工具箱，直接打开可穿戴版径向菜单。
      */
-    @SubscribeEvent(priority = net.neoforged.bus.api.EventPriority.HIGHEST)
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onKeyInput(InputEvent.Key event) {
         if (event.getAction() != GLFW.GLFW_PRESS) {
             return;
@@ -106,12 +109,14 @@ public final class WearableToolboxClientEvents {
     }
 
     /**
-     * Create 的蓝图工具菜单只在主手持“带 schematic_file 的蓝图”时激活。
+     * Create 的蓝图工具菜单只在主手持“已写入文件的蓝图”时激活。
+     * 1.20.1 没有物品数据组件，蓝图是否写入文件看 NBT 的 {@code File} 键。
      */
     private static boolean holdsSchematic(LocalPlayer player) {
         ItemStack mainHand = player.getMainHandItem();
         return AllItems.SCHEMATIC.isIn(mainHand)
-                && mainHand.has(AllDataComponents.SCHEMATIC_FILE);
+                && mainHand.hasTag()
+                && mainHand.getTag().contains("File");
     }
 
     /**

@@ -3,24 +3,25 @@ package com.minecart.wearabletoolbox;
 import com.minecart.wearabletoolbox.common.ToolboxPoseState;
 import com.minecart.wearabletoolbox.common.ToolboxPoseStatePayload;
 import com.minecart.wearabletoolbox.common.WearableToolboxBindings;
+import com.minecart.wearabletoolbox.common.WearableToolboxNetwork;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.entity.player.PlayerEvent;
-import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
 
 /**
  * 服务端每 tick 维护可穿戴工具箱的快捷栏绑定与自动补充。
  */
-@EventBusSubscriber(modid = WearableToolbox.MODID, bus = EventBusSubscriber.Bus.GAME)
+@Mod.EventBusSubscriber(modid = WearableToolbox.MODID)
 public final class WearableToolboxServerEvents {
     private WearableToolboxServerEvents() {
     }
 
     @SubscribeEvent
-    public static void onPlayerTick(PlayerTickEvent.Post event) {
-        if (event.getEntity() instanceof ServerPlayer player) {
+    public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
+        if (event.phase == TickEvent.Phase.END && event.player instanceof ServerPlayer player) {
             WearableToolboxBindings.tick(player);
         }
     }
@@ -43,7 +44,7 @@ public final class WearableToolboxServerEvents {
     public static void onStartTracking(PlayerEvent.StartTracking event) {
         if (event.getTarget() instanceof ServerPlayer target
                 && event.getEntity() instanceof ServerPlayer receiver) {
-            receiver.connection.send(new ToolboxPoseStatePayload(
+            WearableToolboxNetwork.sendToPlayer(receiver, new ToolboxPoseStatePayload(
                     target.getUUID(),
                     ToolboxPoseState.isServerPosing(target.getUUID())
             ));

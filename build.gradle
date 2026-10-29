@@ -1,104 +1,113 @@
 plugins {
-    id 'java-library'
-    id 'maven-publish'
-    id 'net.neoforged.moddev' version '2.0.143'
+    id 'eclipse'
     id 'idea'
+    id 'maven-publish'
+    id 'net.minecraftforge.gradle' version '[6.0.24,6.2)'
+    id 'org.spongepowered.mixin' version '0.7.38'
 }
 
 version = mod_version
 group = mod_group_id
 
-repositories {
-    maven { url = "https://maven.aliyun.com/repository/public" }
-    maven { url = "https://maven.neoforged.net/releases" }
-    // 机械动力及其 Ponder / Flywheel / Registrate
-    maven { url = "https://maven.createmod.net" }
-    maven { url = "https://maven.ithundxr.dev/snapshots" }
-    // 可选前置 Curios API
-    maven { url = "https://maven.theillusivec4.top/" }
-    maven { url = "https://maven.parchmentmc.org" }
-    mavenCentral()
-}
-
 base {
     archivesName = mod_id
 }
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+// Forge 1.20.1 的运行时是 Java 17。
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
-neoForge {
-    // NeoForge 版本必须与 minecraft_version 对应同一 MC 版本。
-    version = project.neo_version
-
-    parchment {
-        mappingsVersion = project.parchment_mappings_version
-        minecraftVersion = project.parchment_minecraft_version
-    }
+minecraft {
+    mappings channel: mapping_channel, version: mapping_version
+    copyIdeResources = true
 
     runs {
         client {
-            client()
-            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            workingDirectory project.file('run')
+            property 'forge.logging.markers', 'REGISTRIES'
+            property 'forge.logging.console.level', 'debug'
+            mods {
+                "${mod_id}" {
+                    source sourceSets.main
+                }
+            }
         }
         server {
-            server()
-            programArgument '--nogui'
-            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            workingDirectory project.file('run')
+            property 'forge.logging.markers', 'REGISTRIES'
+            property 'forge.logging.console.level', 'debug'
+            arg '--nogui'
+            mods {
+                "${mod_id}" {
+                    source sourceSets.main
+                }
+            }
         }
         data {
-            data()
-            programArguments.addAll '--mod', project.mod_id, '--all',
-                    '--output', file('src/generated/resources/').getAbsolutePath(),
-                    '--existing', file('src/main/resources/').getAbsolutePath()
-        }
-        configureEach {
-            systemProperty 'forge.logging.markers', 'REGISTRIES'
-            logLevel = org.slf4j.event.Level.DEBUG
+            workingDirectory project.file('run')
+            property 'forge.logging.markers', 'REGISTRIES'
+            property 'forge.logging.console.level', 'debug'
+            args '--mod', mod_id, '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/')
+            mods {
+                "${mod_id}" {
+                    source sourceSets.main
+                }
+            }
         }
     }
+}
 
-    mods {
-        "${mod_id}" {
-            sourceSet sourceSets.main
-        }
-    }
+// Mixin：1.20.1 线上运行时是 SRG 名，必须生成 refmap，否则注入在生产环境失效。
+mixin {
+    add sourceSets.main, "${mod_id}.refmap.json"
+    config "${mod_id}.mixins.json"
 }
 
 // runData 输出挂进资源源集，随 jar 打包（勿手动改 generated 文件）。
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
+repositories {
+    // 本地预置的依赖（libs/maven）。存在时优先命中，不存在时自动回落到下面的远程仓库，
+    // 这样在慢速网络下可以先手工 curl 一份 jar 进来，无需改动下面的依赖坐标。
+    maven { url = uri("$projectDir/libs/maven") }
+    maven { url = "https://maven.aliyun.com/repository/public" }
+    // 机械动力及其 Catnip / Ponder / Flywheel
+    maven { url = "https://maven.createmod.net" }
+    maven { url = "https://maven.ithundxr.dev/snapshots" }
+    // Registrate 在 ithundxr 的 mirror 仓库里
+    maven { url = "https://maven.ithundxr.dev/mirror" }
+    // 可选前置 Curios API
+    maven { url = "https://maven.theillusivec4.top/" }
+    mavenCentral()
+}
+
 dependencies {
-    // 机械动力 6.0.10-280（前置）
-    implementation("com.simibubi.create:create-${minecraft_version}:${create_version}") {
+    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+
+    // 机械动力 6.0.8（1.20.1）。-slim 不含打包的依赖库，故显式补 Ponder / Flywheel / Registrate。
+    // 注意 Ponder 的 jar 里同时打包了 Catnip，因此不需要单独的 Catnip 依赖。
+    compileOnly fg.deobf("com.simibubi.create:create-${minecraft_version}:${create_version}:slim") {
         transitive = false
     }
-    implementation "net.createmod.ponder:ponder-neoforge:${ponder_version}+mc${minecraft_version}"
-    compileOnly "dev.engine-room.flywheel:flywheel-neoforge-api-${minecraft_version}:${flywheel_version}"
-    runtimeOnly "dev.engine-room.flywheel:flywheel-neoforge-${minecraft_version}:${flywheel_version}"
-    implementation "com.tterrag.registrate:Registrate:${registrate_version}"
+    compileOnly fg.deobf("net.createmod.ponder:Ponder-Forge-${minecraft_version}:${ponder_version}")
+    compileOnly fg.deobf("dev.engine-room.flywheel:flywheel-forge-api-${minecraft_version}:${flywheel_version}")
+    compileOnly fg.deobf("com.tterrag.registrate:Registrate:${registrate_version}")
     // Curios 是可选的编译期依赖；未安装时相关代码不会执行。
-    compileOnly "top.theillusivec4.curios:curios-neoforge:${curios_version}+${minecraft_version}:api"
+    compileOnly fg.deobf("top.theillusivec4.curios:curios-forge:${curios_version}:api")
+
+    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 }
 
-// IDEA 的 Client/Server Application 运行配置会调用 IDE 注入的 Gradle 任务，
-// 该任务本身不会生成 build/moddev 下的启动参数文件；clean 后直接运行会因缺少
-// clientRunProgramArgs.txt / clientRunVmArgs.txt 而退出。这里补上生成依赖。
-tasks.configureEach {
-    if (name == 'net.neoforged.devlaunch.Main.main()') {
-        dependsOn 'prepareClientRun'
-    }
-}
-
-// 只在 neoforge.mods.toml 上做占位符展开，其它资源文件原样复制。
+// 只在 mods.toml 上做占位符展开，其它资源文件原样复制。
 // 注意：expand 底层是 Groovy 模板引擎，会把它看到的任何“美元号+花括号”片段
 // 当作表达式求值——资源文件里出现非占位符的该类写法会让构建以模板解析失败报错。
 processResources {
-    // 只展开 toml 需要的属性；同时声明为任务输入，改了 gradle.properties 才会重新生成。
+    // mods.toml 里含中文，必须显式用 UTF-8 读写；Gradle 的过滤默认取平台编码（本机 GBK）会把中文写坏。
+    filteringCharset = 'UTF-8'
     def replaceProperties = [
             minecraft_version      : minecraft_version,
             minecraft_version_range: minecraft_version_range,
-            neo_version            : neo_version,
-            neo_version_range      : neo_version_range,
+            forge_version          : forge_version,
+            forge_version_range    : forge_version_range,
             mod_id                 : mod_id,
             mod_name               : mod_name,
             mod_license            : mod_license,
@@ -107,7 +116,7 @@ processResources {
             mod_description        : mod_description,
     ]
     inputs.properties replaceProperties
-    filesMatching('META-INF/neoforge.mods.toml') {
+    filesMatching('META-INF/mods.toml') {
         expand replaceProperties
     }
 }
@@ -124,4 +133,5 @@ jar {
                 "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
         ])
     }
+    finalizedBy 'reobfJar'
 }

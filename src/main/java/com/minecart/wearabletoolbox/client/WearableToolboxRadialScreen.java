@@ -4,17 +4,16 @@ import com.minecart.wearabletoolbox.common.DepositAllPayload;
 import com.minecart.wearabletoolbox.common.WearableToolboxBindPayload;
 import com.minecart.wearabletoolbox.common.WearableToolboxBindings;
 import com.minecart.wearabletoolbox.common.WearableToolboxMenu;
+import com.minecart.wearabletoolbox.common.WearableToolboxNetwork;
 import com.minecart.wearabletoolbox.mixin.RadialToolboxMenuAccess;
 import com.minecart.wearabletoolbox.mixin.ToolboxBlockEntityAccess;
 import com.minecart.wearabletoolbox.mixin.ToolboxInventoryAccess;
 import com.simibubi.create.content.equipment.toolbox.RadialToolboxMenu;
 import com.simibubi.create.content.equipment.toolbox.ToolboxBlockEntity;
 import com.simibubi.create.content.equipment.toolbox.ToolboxInventory;
-import net.createmod.catnip.gui.ScreenOpener;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.List;
 
@@ -42,7 +41,7 @@ public final class WearableToolboxRadialScreen extends RadialToolboxMenu {
     public static void open(ItemStack stack, Player player) {
         ToolboxBlockEntity toolbox = WearableToolboxMenu.createVirtualBlockEntity(stack, player);
         boolean bound = WearableToolboxBindings.hasBinding(player, player.getInventory().selected);
-        ScreenOpener.open(new WearableToolboxRadialScreen(toolbox, bound));
+        Minecraft.getInstance().setScreen(new WearableToolboxRadialScreen(toolbox, bound));
     }
 
     @Override
@@ -59,7 +58,7 @@ public final class WearableToolboxRadialScreen extends RadialToolboxMenu {
                 : access.wearableToolbox$hoveredSlot();
 
         if (selected == DEPOSIT) {
-            PacketDistributor.sendToServer(new DepositAllPayload());
+            WearableToolboxNetwork.sendToServer(new DepositAllPayload());
             return;
         }
         if (selected == UNEQUIP) {
@@ -88,7 +87,7 @@ public final class WearableToolboxRadialScreen extends RadialToolboxMenu {
     }
 
     private static void send(int compartment, Player player) {
-        PacketDistributor.sendToServer(
+        WearableToolboxNetwork.sendToServer(
                 new WearableToolboxBindPayload(compartment, player.getInventory().selected)
         );
     }

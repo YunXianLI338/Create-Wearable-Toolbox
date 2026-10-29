@@ -2,6 +2,13 @@
 
 [中文](CHANGELOG.md)
 
+## 0.1.3 — 2026-10-29
+
+### Added
+
+- Added a Minecraft 1.20.1 (Forge) build.
+  - Forge 1.20.1 has no in-game configuration screen; client options are now edited in `config/wearable_toolbox-client.toml`.
+
 ## 0.1.2 — 2026-10-27
 
 ### Added

@@ -19,11 +19,11 @@ import net.minecraft.client.renderer.block.model.BlockModel;
 import net.minecraft.client.renderer.entity.RenderLayerParent;
 import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.model.ModelState;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
+import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.item.DyeColor;
 
 import javax.annotation.Nullable;
@@ -44,9 +44,9 @@ import java.util.Map;
  */
 public final class ToolboxArmorLayer extends RenderLayer<AbstractClientPlayer, PlayerModel<AbstractClientPlayer>> {
     private static final ResourceLocation MODEL_LOCATION =
-            ResourceLocation.fromNamespaceAndPath(WearableToolbox.MODID, "models/brown.json");
+            new ResourceLocation(WearableToolbox.MODID, "models/brown.json");
     private static final ResourceLocation OPEN_MODEL_LOCATION =
-            ResourceLocation.fromNamespaceAndPath(WearableToolbox.MODID, "models/brown_on.json");
+            new ResourceLocation(WearableToolbox.MODID, "models/brown_on.json");
     private static final ModelState MODEL_STATE = new ModelState() {
     };
 
@@ -128,10 +128,10 @@ public final class ToolboxArmorLayer extends RenderLayer<AbstractClientPlayer, P
             poseStack.mulPose(Axis.ZP.rotationDegrees(180.0F));
         }
 
-        VertexConsumer consumer = buffer.getBuffer(RenderType.entityCutoutNoCull(TextureAtlas.LOCATION_BLOCKS));
+        VertexConsumer consumer = buffer.getBuffer(RenderType.entityCutoutNoCull(InventoryMenu.BLOCK_ATLAS));
         PoseStack.Pose pose = poseStack.last();
         for (BakedQuad quad : modelQuads) {
-            consumer.putBulkData(pose, quad, 1.0F, 1.0F, 1.0F, 1.0F, packedLight, OverlayTexture.NO_OVERLAY);
+            consumer.putBulkData(pose, quad, 1.0F, 1.0F, 1.0F, 1.0F, packedLight, OverlayTexture.NO_OVERLAY, false);
         }
         poseStack.popPose();
     }
@@ -180,20 +180,20 @@ public final class ToolboxArmorLayer extends RenderLayer<AbstractClientPlayer, P
             }
 
             // 16 色工具箱共用同一套 UV，只是方块图集里的贴图不同。
-            ResourceLocation texture = ResourceLocation.fromNamespaceAndPath(
+            ResourceLocation texture = new ResourceLocation(
                     "create", "block/toolbox/" + color.getSerializedName());
             TextureAtlasSprite colorSprite = Minecraft.getInstance()
-                    .getTextureAtlas(TextureAtlas.LOCATION_BLOCKS)
+                    .getTextureAtlas(InventoryMenu.BLOCK_ATLAS)
                     .apply(texture);
 
             List<BakedQuad> baked = new ArrayList<>();
             for (BlockElement element : model.getElements()) {
                 for (var entry : element.faces.entrySet()) {
                     BlockElementFace face = entry.getValue();
-                    TextureAtlasSprite sprite = "#0".equals(face.texture())
+                    TextureAtlasSprite sprite = "#0".equals(face.texture)
                             ? colorSprite
-                            : model.getMaterial(face.texture()).sprite();
-                    baked.add(BlockModel.bakeFace(element, face, sprite, entry.getKey(), MODEL_STATE));
+                            : model.getMaterial(face.texture).sprite();
+                    baked.add(BlockModel.bakeFace(element, face, sprite, entry.getKey(), MODEL_STATE, location));
                 }
             }
             return List.copyOf(baked);

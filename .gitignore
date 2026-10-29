@@ -3,6 +3,10 @@
 .gradle-build/
 build/
 *.log
+build_log*.txt
+
+# 本地预置依赖（加速用，缺失时构建自动回落远程仓库）
+libs/
 
 # IDE
 .idea/

@@ -2,7 +2,9 @@ pluginManagement {
     repositories {
         mavenLocal()
         gradlePluginPortal()
-        maven { url = 'https://maven.neoforged.net/releases' }
+        // ForgeGradle 6 与 MixinGradle 的插件仓库
+        maven { url = 'https://maven.minecraftforge.net/' }
+        maven { url = 'https://repo.spongepowered.org/repository/maven-public/' }
     }
 }
 

@@ -1,10 +1,7 @@
 package com.minecart.wearabletoolbox.common;
 
 import com.minecart.wearabletoolbox.mixin.ToolboxInventoryAccess;
-import com.simibubi.create.AllDataComponents;
 import com.simibubi.create.content.equipment.toolbox.ToolboxInventory;
-import com.simibubi.create.foundation.networking.ISyncPersistentData;
-import net.createmod.catnip.platform.CatnipServices;
 import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -12,7 +9,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.List;
 import java.util.UUID;
@@ -23,6 +19,9 @@ import java.util.UUID;
  * <p>Create 的放置版工具箱用方块坐标把“某个隔间”绑定到快捷栏，并在
  * {@code ToolboxBlockEntity#tickPlayers} 中自动补充/回收快捷栏物品。可穿戴版没有方块，
  * 因此把绑定数据放在玩家持久化 NBT 里，并每 tick 按同样的规则维护。</p>
+ *
+ * <p>1.20.1 与 1.21.1 的差别：工具箱库存不再是物品数据组件，而是物品 NBT 的
+ * {@code Inventory} 子标签，所以每次修改都要显式读出来、改完再写回去。</p>
  */
 public final class WearableToolboxBindings {
     /** 玩家持久化 NBT 中的根键。 */
@@ -38,7 +37,7 @@ public final class WearableToolboxBindings {
     }
 
     /**
-     * 当前快捷栏槽位是否已绑定隔间。客户端的持久化数据由 Create 的 syncData 同步，
+     * 当前快捷栏槽位是否已绑定隔间。客户端的持久化数据由 {@link #syncData} 同步，
      * 因此这里可以安全地在客户端读取。
      */
     public static boolean hasBinding(Player player, int hotbarSlot) {
@@ -56,28 +55,23 @@ public final class WearableToolboxBindings {
     }
 
     /**
-     * 同步玩家持久化数据。
+     * 同步玩家持久化数据中的绑定部分。
      *
-     * <p>不能直接用 Create 的 {@code ToolboxHandler.syncData}：它把玩家正在使用的
-     * {@code CompoundTag} 原样塞进网络包，而网络编码在 Netty 线程上异步执行。
-     * 绑定/补充逻辑随后还会继续修改同一棵树，编码时就会抛出
-     * {@code ConcurrentModificationException} 并断开客户端。这里发送一份深拷贝。</p>
+     * <p>只能发深拷贝：网络编码在 Netty 线程上异步执行，而绑定/补充逻辑随后还会继续
+     * 修改同一棵树，直接发引用会抛 {@code ConcurrentModificationException} 并断开客户端。</p>
      */
     public static void syncData(ServerPlayer player) {
-        CatnipServices.NETWORK.sendToClient(
-                player,
-                new ISyncPersistentData.PersistentDataPacket(player.getId(), player.getPersistentData().copy())
-        );
+        WearableToolboxNetwork.sendToPlayer(player, new SyncBindingsPayload(root(player).copy()));
     }
 
     /**
      * 把服务端刚写回装备槽的工具箱物品发给客户端。
      *
-     * <p>胸甲栏的物品组件不一定立刻同步给玩家自己，径向菜单读取本地物品栈时会看到旧库存，
+     * <p>胸甲栏的物品数据不一定立刻同步给玩家自己，径向菜单读取本地物品栈时会看到旧库存，
      * 导致“隔间已空但图标仍是亮的”。</p>
      */
     public static void syncToolbox(ServerPlayer player, int curioSlot, ItemStack stack) {
-        PacketDistributor.sendToPlayer(player, new SyncToolboxPayload(stack.copy(), curioSlot));
+        WearableToolboxNetwork.sendToPlayer(player, new SyncToolboxPayload(stack.copy(), curioSlot));
     }
 
     /**
@@ -126,10 +120,7 @@ public final class WearableToolboxBindings {
             return;
         }
 
-        ToolboxInventory inventory = equipped.stack().get(AllDataComponents.TOOLBOX_INVENTORY);
-        if (inventory == null) {
-            inventory = new ToolboxInventory(null);
-        }
+        ToolboxInventory inventory = ToolboxStorage.readInventory(equipped.stack());
         List<ItemStack> filters = filters(inventory);
         if (compartment >= filters.size() || filters.get(compartment).isEmpty()) {
             return;
@@ -148,17 +139,10 @@ public final class WearableToolboxBindings {
             return;
         }
         ItemStack toolbox = equipped.stack();
-        inventory = toolbox.get(AllDataComponents.TOOLBOX_INVENTORY);
-        if (inventory == null) {
-            inventory = new ToolboxInventory(null);
-        }
+        inventory = ToolboxStorage.readInventory(toolbox);
         filters = filters(inventory);
 
-        UUID id = toolbox.get(AllDataComponents.TOOLBOX_UUID);
-        if (id == null) {
-            id = UUID.randomUUID();
-            toolbox.set(AllDataComponents.TOOLBOX_UUID, id);
-        }
+        UUID id = ToolboxStorage.ensureId(toolbox);
 
         CompoundTag root = root(player);
         root.putUUID(TOOLBOX_KEY, id);
@@ -197,8 +181,9 @@ public final class WearableToolboxBindings {
 
         EquippedToolbox equipped = EquippedToolbox.find(player);
         if (equipped != null) {
-            ToolboxInventory inventory = equipped.stack().get(AllDataComponents.TOOLBOX_INVENTORY);
-            if (inventory != null && compartment >= 0 && compartment < 8) {
+            ItemStack toolbox = equipped.stack();
+            ToolboxInventory inventory = ToolboxStorage.readInventory(toolbox);
+            if (compartment >= 0 && compartment < 8) {
                 Inventory playerInventory = player.getInventory();
                 ItemStack current = playerInventory.getItem(hotbarSlot);
                 if (!current.isEmpty()) {
@@ -209,10 +194,10 @@ public final class WearableToolboxBindings {
                     }
                 }
 
-                ItemStack updated = equipped.stack().copy();
-                updated.set(AllDataComponents.TOOLBOX_INVENTORY, inventory);
-                EquippedToolbox.set(player, equipped.curioSlot(), updated);
-                syncToolbox(player, equipped.curioSlot(), updated);
+                ToolboxStorage.writeInventory(toolbox, inventory);
+                ToolboxStorage.ensureId(toolbox);
+                EquippedToolbox.set(player, equipped.curioSlot(), toolbox);
+                syncToolbox(player, equipped.curioSlot(), toolbox);
             }
         }
 
@@ -241,16 +226,11 @@ public final class WearableToolboxBindings {
         }
 
         ItemStack toolbox = equipped.stack();
-        UUID id = toolbox.get(AllDataComponents.TOOLBOX_UUID);
+        UUID id = ToolboxStorage.getId(toolbox);
         if (id == null || !id.equals(root.getUUID(TOOLBOX_KEY))) {
             // 装备槽换成了另一个工具箱（或物品丢失了 UUID），旧绑定失效。
             player.getPersistentData().remove(DATA_KEY);
             syncData(player);
-            return;
-        }
-
-        ToolboxInventory inventory = toolbox.get(AllDataComponents.TOOLBOX_INVENTORY);
-        if (inventory == null) {
             return;
         }
 
@@ -259,6 +239,7 @@ public final class WearableToolboxBindings {
             return;
         }
 
+        ToolboxInventory inventory = ToolboxStorage.readInventory(toolbox);
         List<ItemStack> filters = filters(inventory);
         Inventory playerInventory = player.getInventory();
         boolean inventoryChanged = false;
@@ -316,10 +297,10 @@ public final class WearableToolboxBindings {
             syncData(player);
         }
         if (inventoryChanged) {
-            ItemStack updated = toolbox.copy();
-            updated.set(AllDataComponents.TOOLBOX_INVENTORY, inventory);
-            EquippedToolbox.set(player, equipped.curioSlot(), updated);
-            syncToolbox(player, equipped.curioSlot(), updated);
+            ToolboxStorage.writeInventory(toolbox, inventory);
+            ToolboxStorage.ensureId(toolbox);
+            EquippedToolbox.set(player, equipped.curioSlot(), toolbox);
+            syncToolbox(player, equipped.curioSlot(), toolbox);
             playerInventory.setChanged();
         }
     }

@@ -8,15 +8,15 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
-import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.minecraftforge.event.entity.player.ItemTooltipEvent;
+import net.minecraftforge.event.entity.player.PlayerInteractEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
 
 /**
  * 通用游戏事件：给机械动力的工具箱物品加装备/操作提示，并允许把工具箱穿到盔甲架上。
  */
-@EventBusSubscriber(modid = WearableToolbox.MODID, bus = EventBusSubscriber.Bus.GAME)
+@Mod.EventBusSubscriber(modid = WearableToolbox.MODID)
 public final class WearableToolboxEvents {
     private WearableToolboxEvents() {
     }

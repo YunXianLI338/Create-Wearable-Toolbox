@@ -1,8 +1,7 @@
-# 1.21.1（NeoForge 21.1.x）必须显式声明 modLoader / loaderVersion；license 必填。
-# 花括号占位符由 build.gradle 的 processResources 在构建时展开（值来自 gradle.properties）。
+# Forge 1.20.1（47.x）。花括号占位符由 build.gradle 的 processResources 在构建时展开（值来自 gradle.properties）。
 # 注意：不要在本文件里写“美元号+花括号”形式的示例文字，它会被 Groovy 模板当表达式求值导致构建失败。
 modLoader="javafml"
-loaderVersion="[1,)"
+loaderVersion="[47,)"
 license="${mod_license}"
 
 [[mods]]
@@ -10,37 +9,37 @@ modId="${mod_id}"
 version="${mod_version}"
 displayName="${mod_name}"
 authors="${mod_authors}"
-description="${mod_description}"
+description="把机械动力的工具箱装备到胸甲栏或饰品栏，工具随取随用。"
 
 [[mixins]]
 config="wearable_toolbox.mixins.json"
 
 [[dependencies.${mod_id}]]
-modId="neoforge"
-type="required"
-versionRange="${neo_version_range}"
+modId="forge"
+mandatory=true
+versionRange="[47,)"
 ordering="NONE"
 side="BOTH"
 
 [[dependencies.${mod_id}]]
 modId="minecraft"
-type="required"
+mandatory=true
 versionRange="${minecraft_version_range}"
 ordering="NONE"
 side="BOTH"
 
-# 前置：机械动力 6.0.10（Maven 构件版本为 6.0.10-280，模组内版本号为 6.0.10）
+# 前置：机械动力 6.0.8（Maven 构件版本为 6.0.8-291，模组内版本号为 6.0.8）
 [[dependencies.${mod_id}]]
 modId="create"
-type="required"
-versionRange="[6.0.10,)"
+mandatory=true
+versionRange="[6.0.8,)"
 ordering="AFTER"
 side="BOTH"
 
 # 可选前置：Curios API。安装后可放进胸饰（body）栏，未安装时只使用原版胸甲栏。
 [[dependencies.${mod_id}]]
 modId="curios"
-type="optional"
-versionRange="[9.2.2,)"
+mandatory=false
+versionRange="[5.2.0,)"
 ordering="AFTER"
 side="BOTH"

@@ -5,38 +5,38 @@ import com.minecart.wearabletoolbox.common.DepositAllPayload;
 import com.minecart.wearabletoolbox.common.EquippedToolbox;
 import com.minecart.wearabletoolbox.common.WearableToolboxBindings;
 import com.minecart.wearabletoolbox.common.WearableToolboxMenu;
+import com.minecart.wearabletoolbox.common.WearableToolboxNetwork;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.simibubi.create.content.equipment.toolbox.ToolboxMenu;
+import com.simibubi.create.content.equipment.toolbox.ToolboxScreen;
 import com.simibubi.create.foundation.gui.AllGuiTextures;
 import com.simibubi.create.foundation.gui.AllIcons;
 import com.simibubi.create.foundation.gui.widget.IconButton;
-import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.entity.player.PlayerRenderer;
-import net.minecraft.client.resources.PlayerSkin;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.level.GameType;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.EntityRenderersEvent;
-import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
-import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
-import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
-import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
-import net.neoforged.neoforge.network.PacketDistributor;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.client.event.EntityRenderersEvent;
+import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
+import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
+import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import org.lwjgl.glfw.GLFW;
 
 /**
- * 客户端注册：按键与菜单界面。
+ * 客户端注册：按键、菜单界面与热键栏边框。
  */
-@EventBusSubscriber(modid = WearableToolbox.MODID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+@Mod.EventBusSubscriber(modid = WearableToolbox.MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class WearableToolboxClient {
     public static final KeyMapping OPEN_TOOLBOX = new KeyMapping(
             "key.wearable_toolbox.open",
@@ -53,8 +53,11 @@ public final class WearableToolboxClient {
     }
 
     @SubscribeEvent
-    public static void registerScreens(RegisterMenuScreensEvent event) {
-        event.register(WearableToolbox.TOOLBOX_MENU.get(), WearableToolboxScreen::new);
+    public static void clientSetup(FMLClientSetupEvent event) {
+        event.enqueueWork(() -> MenuScreens.register(
+                WearableToolbox.TOOLBOX_MENU.get(),
+                WearableToolboxScreen::new
+        ));
     }
 
     /**
@@ -68,7 +71,7 @@ public final class WearableToolboxClient {
 
     @SubscribeEvent
     public static void addLayers(EntityRenderersEvent.AddLayers event) {
-        for (PlayerSkin.Model skin : event.getSkins()) {
+        for (String skin : event.getSkins()) {
             PlayerRenderer renderer = event.getSkin(skin);
             if (renderer != null) {
                 renderer.addLayer(new ToolboxArmorLayer(renderer));
@@ -77,11 +80,13 @@ public final class WearableToolboxClient {
     }
 
     @SubscribeEvent
-    public static void registerGuiLayers(RegisterGuiLayersEvent event) {
+    public static void registerGuiOverlays(RegisterGuiOverlaysEvent event) {
+        // Forge 1.20.1 的 RegisterGuiOverlaysEvent 只接受 ResourceLocation，枚举要用 id()。
         event.registerAbove(
-                VanillaGuiLayers.HOTBAR,
-                ResourceLocation.fromNamespaceAndPath(WearableToolbox.MODID, "toolbox_bindings"),
-                WearableToolboxClient::renderToolboxBindings
+                VanillaGuiOverlay.HOTBAR.id(),
+                "toolbox_bindings",
+                (gui, graphics, partialTick, screenWidth, screenHeight) ->
+                        renderToolboxBindings(graphics, partialTick)
         );
     }
 
@@ -89,7 +94,7 @@ public final class WearableToolboxClient {
      * 给通过可穿戴工具箱绑定的快捷栏槽位画 Create 同款黄铜色边框。
      * 放置版由 Create 自己根据方块距离绘制；可穿戴版没有坐标，绑定即视为可用。
      */
-    private static void renderToolboxBindings(GuiGraphics graphics, DeltaTracker deltaTracker) {
+    private static void renderToolboxBindings(GuiGraphics graphics, float partialTick) {
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer player = minecraft.player;
         if (player == null || minecraft.options.hideGui || minecraft.gameMode == null
@@ -128,9 +133,8 @@ public final class WearableToolboxClient {
      * Create 的 ToolboxScreen 自带一个“全部存入附近工具箱”的按钮，它按方块坐标发包。
      * 可穿戴工具箱没有方块坐标，这里重新初始化界面时替换为向自身工具箱存入。
      */
-    public static class WearableToolboxScreen extends com.simibubi.create.content.equipment.toolbox.ToolboxScreen {
-        public WearableToolboxScreen(com.simibubi.create.content.equipment.toolbox.ToolboxMenu menu,
-                                     Inventory inventory, Component title) {
+    public static class WearableToolboxScreen extends ToolboxScreen {
+        public WearableToolboxScreen(ToolboxMenu menu, Inventory inventory, Component title) {
             super(menu, inventory, title);
         }
 
@@ -145,7 +149,7 @@ public final class WearableToolboxClient {
                     AllIcons.I_TOOLBOX
             );
             deposit.setToolTip(Component.translatable("tooltip.wearable_toolbox.deposit_all"));
-            deposit.withCallback(() -> PacketDistributor.sendToServer(new DepositAllPayload()));
+            deposit.withCallback(() -> WearableToolboxNetwork.sendToServer(new DepositAllPayload()));
             addRenderableWidget(deposit);
 
             IconButton confirm = new IconButton(

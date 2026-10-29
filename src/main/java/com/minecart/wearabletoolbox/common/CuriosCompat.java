@@ -22,7 +22,8 @@ final class CuriosCompat {
 
     @Nullable
     static EquippedToolbox findBody(Player player) {
-        Optional<ICuriosItemHandler> curios = CuriosApi.getCuriosInventory(player);
+        // Curios 5.x 返回 LazyOptional，这里统一转成 Optional。
+        Optional<ICuriosItemHandler> curios = CuriosApi.getCuriosInventory(player).resolve();
         if (curios.isEmpty()) {
             return null;
         }
@@ -42,7 +43,8 @@ final class CuriosCompat {
     }
 
     static void setBody(Player player, int slot, ItemStack stack) {
-        Optional<ICuriosItemHandler> curios = CuriosApi.getCuriosInventory(player);
+        // Curios 5.x 返回 LazyOptional，这里统一转成 Optional。
+        Optional<ICuriosItemHandler> curios = CuriosApi.getCuriosInventory(player).resolve();
         if (curios.isEmpty()) {
             return;
         }
@@ -57,7 +59,8 @@ final class CuriosCompat {
     }
 
     static ItemStack getBody(Player player, int slot) {
-        Optional<ICuriosItemHandler> curios = CuriosApi.getCuriosInventory(player);
+        // Curios 5.x 返回 LazyOptional，这里统一转成 Optional。
+        Optional<ICuriosItemHandler> curios = CuriosApi.getCuriosInventory(player).resolve();
         if (curios.isEmpty()) {
             return ItemStack.EMPTY;
         }
@@ -75,7 +78,8 @@ final class CuriosCompat {
      * <p>没有对应槽位或数据时返回 {@code true}，避免因为数据缺失误把模型藏掉。</p>
      */
     static boolean isBodySlotVisible(Player player, int slot) {
-        Optional<ICuriosItemHandler> curios = CuriosApi.getCuriosInventory(player);
+        // Curios 5.x 返回 LazyOptional，这里统一转成 Optional。
+        Optional<ICuriosItemHandler> curios = CuriosApi.getCuriosInventory(player).resolve();
         if (curios.isEmpty()) {
             return true;
         }

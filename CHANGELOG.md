@@ -2,6 +2,13 @@
 
 [English](CHANGELOG_EN.md)
 
+## 0.1.3 — 2026-10-29
+
+### 新增
+
+- 新增 Minecraft 1.20.1（Forge）版本。
+  - Forge 1.20.1 不提供游戏内配置界面，客户端选项改由 `config/wearable_toolbox-client.toml` 调整。
+
 ## 0.1.2 — 2026-10-26
 
 ### 新增
