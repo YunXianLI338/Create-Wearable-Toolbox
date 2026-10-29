@@ -85,12 +85,15 @@ dependencies {
 
     // 机械动力 6.0.8（1.20.1）。-slim 不含打包的依赖库，故显式补 Ponder / Flywheel / Registrate。
     // 注意 Ponder 的 jar 里同时打包了 Catnip，因此不需要单独的 Catnip 依赖。
-    compileOnly fg.deobf("com.simibubi.create:create-${minecraft_version}:${create_version}:slim") {
+    // 这些前置同时是 development 运行所需的模组（ForgeGradle 会把 implementation 的 jar 放进
+    // runClient/runServer 的 classpath，FML 在开发环境从 classpath 发现模组），所以用 implementation
+    // 而不是 compileOnly——否则 run/mods 为空时启动会报 Missing or unsupported mandatory dependencies。
+    implementation fg.deobf("com.simibubi.create:create-${minecraft_version}:${create_version}:slim") {
         transitive = false
     }
-    compileOnly fg.deobf("net.createmod.ponder:Ponder-Forge-${minecraft_version}:${ponder_version}")
-    compileOnly fg.deobf("dev.engine-room.flywheel:flywheel-forge-api-${minecraft_version}:${flywheel_version}")
-    compileOnly fg.deobf("com.tterrag.registrate:Registrate:${registrate_version}")
+    implementation fg.deobf("net.createmod.ponder:Ponder-Forge-${minecraft_version}:${ponder_version}")
+    implementation fg.deobf("dev.engine-room.flywheel:flywheel-forge-${minecraft_version}:${flywheel_version}")
+    implementation fg.deobf("com.tterrag.registrate:Registrate:${registrate_version}")
     // Curios 是可选的编译期依赖；未安装时相关代码不会执行。
     compileOnly fg.deobf("top.theillusivec4.curios:curios-forge:${curios_version}:api")
 

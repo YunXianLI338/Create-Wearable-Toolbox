@@ -84,7 +84,8 @@ gradlew.bat runData
 - 构建产物：`build/libs/wearable_toolbox-0.1.3.jar`，放入客户端 `mods/` 即可。
 - `libs/maven` 是本地预置依赖仓库（构建时优先命中，缺失时自动回落远程仓库）。网络慢时可先用浏览器或 `curl` 把依赖 jar 放进 `libs/maven/<group>/<artifact>/<version>/`，并在同目录手写一个 `<packaging>jar</packaging>` 的最小 pom。该目录不进版本库。
 - 首次构建会下载 Forge MDK 并执行反编译（ForgeGradle 的 `setup` 阶段），耗时较长；日志暂时没有输出并不代表卡死。
-- `runClient` / `runServer` 前需把 Create 与 Curios 的 jar 放进 `run/mods/`（`create-1.20.1-6.0.8-291-all.jar`、`curios-forge-5.14.1+1.20.1.jar`）。
+- `runClient` / `runServer` 不需要手动往 `run/mods` 放前置：Create、Ponder、Flywheel、Registrate 以 `implementation` + `fg.deobf` 声明，ForgeGradle 会把它们（已重映射为 official 名）放进开发运行时的 classpath，FML 在开发环境从 classpath 发现模组。若想测试 Curios，把它也加成 `runtimeOnly fg.deobf(...)`，或直接把 jar 丢进 `run/mods/`。
+- 缺失前置时客户端会在启动阶段直接退出，日志（`run/logs/latest.log`）末尾是 `Missing or unsupported mandatory dependencies: Mod ID: 'create' ...`。
 - `runServer` 首次启动后需把 `run/eula.txt` 改为 `eula=true`；局域网调试可再把 `server.properties` 的 `online-mode` 设为 `false`。
 - `runData` 的输出写入 `src/generated/resources`，该目录已挂进资源源集；不要手改生成文件，改数据生成器后重跑。
 
