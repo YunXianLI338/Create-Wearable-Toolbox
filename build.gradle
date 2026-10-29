@@ -94,6 +94,10 @@ dependencies {
     implementation fg.deobf("net.createmod.ponder:Ponder-Forge-${minecraft_version}:${ponder_version}")
     implementation fg.deobf("dev.engine-room.flywheel:flywheel-forge-${minecraft_version}:${flywheel_version}")
     implementation fg.deobf("com.tterrag.registrate:Registrate:${registrate_version}")
+    // Create 的 mixin 用到 MixinExtras（@WrapOperation 等）。Forge 1.20.1 不像 NeoForge 那样内置它，
+    // 正式包里由 Create 的 -all jar 自带；开发时用 -slim 就必须自己补这个库模组，否则 Create 的
+    // BuiltInRegistriesMixin 在应用阶段抛 ClassNotFoundException: com/llamalad7/mixinextras/... 直接崩溃。
+    implementation fg.deobf("io.github.llamalad7:mixinextras-forge:${mixinextras_version}")
     // Curios 是可选的编译期依赖；未安装时相关代码不会执行。
     compileOnly fg.deobf("top.theillusivec4.curios:curios-forge:${curios_version}:api")
 
