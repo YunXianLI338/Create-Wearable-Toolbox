@@ -2,12 +2,13 @@ package com.minecart.wearabletoolbox.mixin;
 
 import com.minecart.wearabletoolbox.WearableToolboxConfig;
 import com.minecart.wearabletoolbox.client.WearableToolboxClient;
+import com.minecart.wearabletoolbox.common.ToolboxPoseState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.PlayerModel;
 import net.minecraft.client.model.geom.ModelPart;
-import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -24,10 +25,13 @@ public abstract class PlayerModelMixin {
                                           float ageInTicks, float netHeadYaw, float headPitch,
                                           CallbackInfo ci) {
         Minecraft minecraft = Minecraft.getInstance();
-        if (!(entity instanceof LocalPlayer player) || player != minecraft.player) {
+        if (!(entity instanceof Player player)) {
             return;
         }
-        if (!WearableToolboxClient.isToolboxScreenOpen()) {
+        boolean posing = player == minecraft.player
+                ? WearableToolboxClient.isToolboxScreenOpen()
+                : ToolboxPoseState.isClientPosing(player.getUUID());
+        if (!posing) {
             return;
         }
 

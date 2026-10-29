@@ -4,6 +4,8 @@ import com.minecart.wearabletoolbox.WearableToolbox;
 import com.minecart.wearabletoolbox.common.EquippedToolbox;
 import com.minecart.wearabletoolbox.common.OpenToolboxPayload;
 import com.minecart.wearabletoolbox.common.ToolboxItems;
+import com.minecart.wearabletoolbox.common.ToolboxPosePayload;
+import com.minecart.wearabletoolbox.common.ToolboxPoseState;
 import com.simibubi.create.AllDataComponents;
 import com.simibubi.create.AllItems;
 import com.simibubi.create.AllKeys;
@@ -17,6 +19,7 @@ import net.minecraft.world.level.GameType;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.InputEvent;
 import net.neoforged.neoforge.client.event.RenderLivingEvent;
@@ -32,13 +35,26 @@ import org.lwjgl.glfw.GLFW;
  */
 @EventBusSubscriber(modid = WearableToolbox.MODID, bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)
 public final class WearableToolboxClientEvents {
+    private static boolean lastPosing;
+
     private WearableToolboxClientEvents() {
     }
 
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player == null || minecraft.screen != null) {
+        if (minecraft.player == null) {
+            return;
+        }
+
+        boolean posing = WearableToolboxClient.isToolboxScreenOpen()
+                && EquippedToolbox.find(minecraft.player) != null;
+        if (posing != lastPosing) {
+            PacketDistributor.sendToServer(new ToolboxPosePayload(posing));
+            lastPosing = posing;
+        }
+
+        if (minecraft.screen != null) {
             return;
         }
 
@@ -47,6 +63,12 @@ public final class WearableToolboxClientEvents {
                 PacketDistributor.sendToServer(new OpenToolboxPayload());
             }
         }
+    }
+
+    @SubscribeEvent
+    public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
+        lastPosing = false;
+        ToolboxPoseState.clearClient();
     }
 
     /**

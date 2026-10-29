@@ -3,6 +3,8 @@ package com.minecart.wearabletoolbox;
 import com.minecart.wearabletoolbox.common.DepositAllPayload;
 import com.minecart.wearabletoolbox.common.OpenToolboxPayload;
 import com.minecart.wearabletoolbox.common.SyncToolboxPayload;
+import com.minecart.wearabletoolbox.common.ToolboxPosePayload;
+import com.minecart.wearabletoolbox.common.ToolboxPoseStatePayload;
 import com.minecart.wearabletoolbox.common.WearableToolboxBindPayload;
 import com.minecart.wearabletoolbox.common.WearableToolboxMenu;
 import com.mojang.logging.LogUtils;
@@ -82,6 +84,17 @@ public class WearableToolbox {
                 SyncToolboxPayload.TYPE,
                 SyncToolboxPayload.STREAM_CODEC,
                 SyncToolboxPayload::handle
+        );
+        registrar.playToServer(
+                ToolboxPosePayload.TYPE,
+                ToolboxPosePayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(
+                        () -> ToolboxPosePayload.handle(context.player(), payload))
+        );
+        registrar.playToClient(
+                ToolboxPoseStatePayload.TYPE,
+                ToolboxPoseStatePayload.STREAM_CODEC,
+                ToolboxPoseStatePayload::handle
         );
     }
 }

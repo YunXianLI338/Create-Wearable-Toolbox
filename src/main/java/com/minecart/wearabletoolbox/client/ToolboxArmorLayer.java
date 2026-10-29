@@ -3,7 +3,7 @@ package com.minecart.wearabletoolbox.client;
 import com.minecart.wearabletoolbox.WearableToolbox;
 import com.minecart.wearabletoolbox.common.EquippedToolbox;
 import com.minecart.wearabletoolbox.common.ToolboxItems;
-import com.minecart.wearabletoolbox.common.WearableToolboxMenu;
+import com.minecart.wearabletoolbox.common.ToolboxPoseState;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
@@ -138,12 +138,15 @@ public final class ToolboxArmorLayer extends RenderLayer<AbstractClientPlayer, P
 
     /**
      * V 打开的 GUI 或 Alt 径向菜单打开时，换成打开盖子的模型。
+     *
+     * <p>本地玩家直接看自己是否打开了界面；其他玩家则读取服务端同步的姿势状态，
+     * 这样别人打开工具箱时，自己这边也能看到开盖模型。</p>
      */
     private static boolean isToolboxOpen(AbstractClientPlayer player) {
-        if (player.containerMenu instanceof WearableToolboxMenu) {
-            return true;
+        if (player == Minecraft.getInstance().player) {
+            return WearableToolboxClient.isToolboxScreenOpen();
         }
-        return Minecraft.getInstance().screen instanceof WearableToolboxRadialScreen;
+        return ToolboxPoseState.isClientPosing(player.getUUID());
     }
 
     private static List<BakedQuad> getQuads(boolean open, @Nullable DyeColor color) {
