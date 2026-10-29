@@ -6,6 +6,8 @@ import com.minecart.wearabletoolbox.common.OpenToolboxPayload;
 import com.minecart.wearabletoolbox.common.ToolboxItems;
 import com.minecart.wearabletoolbox.common.ToolboxPosePayload;
 import com.minecart.wearabletoolbox.common.ToolboxPoseState;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.math.Axis;
 import com.simibubi.create.AllDataComponents;
 import com.simibubi.create.AllItems;
 import com.simibubi.create.AllKeys;
@@ -15,6 +17,7 @@ import net.minecraft.client.renderer.entity.ArmorStandRenderer;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.util.Mth;
 import net.minecraft.world.level.GameType;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -129,8 +132,15 @@ public final class WearableToolboxClientEvents {
             return;
         }
 
+        // RenderLivingEvent.Post 是在 LivingEntityRenderer 的 popPose() 之后触发的，
+        // 此时 PoseStack 里只剩下世界位移，盔甲架自身的偏航角已经被弹掉了。
+        // 不自己补上这一转，工具箱就会永远朝同一个世界方向，不跟着盔甲架转。
+        float yaw = Mth.rotLerp(event.getPartialTick(), stand.yBodyRotO, stand.yBodyRot);
+        PoseStack poseStack = event.getPoseStack();
+        poseStack.pushPose();
+        poseStack.mulPose(Axis.YP.rotationDegrees(180.0F - yaw));
         ToolboxArmorLayer.renderModel(
-                event.getPoseStack(),
+                poseStack,
                 event.getMultiBufferSource(),
                 event.getPackedLight(),
                 renderer.getModel().body,
@@ -138,5 +148,6 @@ public final class WearableToolboxClientEvents {
                 true,
                 ToolboxItems.color(chest)
         );
+        poseStack.popPose();
     }
 }

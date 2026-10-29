@@ -2,6 +2,12 @@
 
 [中文](CHANGELOG.md)
 
+## 0.1.3 — 2026-10-29
+
+### Fixed
+
+- Fixed the toolbox on an armor stand not rotating with the stand.
+
 ## 0.1.2 — 2026-10-27
 
 ### Added
