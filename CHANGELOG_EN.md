@@ -2,6 +2,12 @@
 
 [中文](CHANGELOG.md)
 
+## 0.1.4 — 2026-10-30
+
+### Fixed
+
+- Fixed being unable to clear a compartment filter and its hotbar binding by clicking an empty filter slot.
+
 ## 0.1.3-hotfix — 2026-10-29
 
 ### Fixed

@@ -38,6 +38,9 @@ public record SyncToolboxPayload(ItemStack stack, int curioSlot) implements Cust
             Player player = context.player();
             if (player != null) {
                 EquippedToolbox.set(player, payload.curioSlot, payload.stack);
+                if (player.containerMenu instanceof WearableToolboxMenu menu) {
+                    menu.refreshFromStack(payload.stack);
+                }
             }
         });
     }

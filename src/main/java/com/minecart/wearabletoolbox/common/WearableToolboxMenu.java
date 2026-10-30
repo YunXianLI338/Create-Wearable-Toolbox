@@ -13,6 +13,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -121,6 +122,39 @@ public class WearableToolboxMenu extends ToolboxMenu {
                         stack.getHoverName()),
                 buffer -> ItemStack.STREAM_CODEC.encode(buffer, stack)
         );
+    }
+
+    /**
+     * 用服务端发来的最新工具箱物品重建当前菜单的虚拟库存。
+     * 过滤器不是真实槽位，只改服务端不会让已经打开的界面刷新。
+     */
+    public void refreshFromStack(ItemStack stack) {
+        contentHolder.readInventory(stack.get(AllDataComponents.TOOLBOX_INVENTORY));
+    }
+
+    /**
+     * 点击空的过滤器槽位时，Create 会清空该隔间的过滤器；但过滤器不是普通槽位，
+     * 不会触发 vanilla 的槽位变更同步，因此这里主动把物品写回装备槽并发给客户端。
+     */
+    @Override
+    public void clicked(int index, int flags, ClickType type, Player player) {
+        ItemStack before = index >= 0 && index < 32 ? getFilter(index / 4).copy() : ItemStack.EMPTY;
+        super.clicked(index, flags, type, player);
+
+        if (player.level().isClientSide || index < 0 || index >= 32) {
+            return;
+        }
+
+        if (ItemStack.matches(before, getFilter(index / 4))) {
+            return;
+        }
+
+        ItemStack stack = curioSlot >= 0
+                ? CuriosCompat.getBody(player, curioSlot)
+                : player.getItemBySlot(EquipmentSlot.CHEST);
+        if (ToolboxItems.isToolbox(stack)) {
+            writeToEquipped(contentHolder, stack);
+        }
     }
 
     @Override
