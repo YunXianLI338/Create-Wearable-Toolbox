@@ -2,6 +2,12 @@
 
 [中文](CHANGELOG.md)
 
+## 0.1.4 — 2026-10-30
+
+### Fixed
+
+- Fixed being unable to clear a compartment filter by clicking its empty filter slot in the wearable toolbox interface.
+
 ## 0.1.3 — 2026-10-29
 
 ### Added

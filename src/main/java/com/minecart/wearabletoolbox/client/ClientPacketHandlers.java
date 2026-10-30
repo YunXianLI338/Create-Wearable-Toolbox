@@ -4,6 +4,7 @@ import com.minecart.wearabletoolbox.common.EquippedToolbox;
 import com.minecart.wearabletoolbox.common.SyncBindingsPayload;
 import com.minecart.wearabletoolbox.common.SyncToolboxPayload;
 import com.minecart.wearabletoolbox.common.WearableToolboxBindings;
+import com.minecart.wearabletoolbox.common.WearableToolboxMenu;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.nbt.CompoundTag;
@@ -21,6 +22,9 @@ public final class ClientPacketHandlers {
         LocalPlayer player = Minecraft.getInstance().player;
         if (player != null) {
             EquippedToolbox.set(player, payload.curioSlot(), payload.stack());
+            if (player.containerMenu instanceof WearableToolboxMenu menu) {
+                menu.refreshFromStack(payload.stack());
+            }
         }
     }
 
