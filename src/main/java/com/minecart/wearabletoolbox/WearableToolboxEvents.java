@@ -1,38 +1,21 @@
 package com.minecart.wearabletoolbox;
 
 import com.minecart.wearabletoolbox.common.ToolboxItems;
-import net.minecraft.ChatFormatting;
-import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.event.entity.player.ItemTooltipEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 /**
- * 通用游戏事件：给机械动力的工具箱物品加装备/操作提示，并允许把工具箱穿到盔甲架上。
+ * 通用游戏事件：允许把工具箱穿到盔甲架上。
  */
 @Mod.EventBusSubscriber(modid = WearableToolbox.MODID)
 public final class WearableToolboxEvents {
     private WearableToolboxEvents() {
-    }
-
-    @SubscribeEvent
-    public static void onItemTooltip(ItemTooltipEvent event) {
-        if (ToolboxItems.isToolbox(event.getItemStack())) {
-            event.getToolTip().add(Component.translatable("tooltip.wearable_toolbox.equip")
-                    .withStyle(ChatFormatting.GRAY));
-            event.getToolTip().add(Component.translatable("tooltip.wearable_toolbox.open")
-                    .withStyle(ChatFormatting.DARK_GRAY));
-            event.getToolTip().add(Component.translatable("tooltip.wearable_toolbox.alt")
-                    .withStyle(ChatFormatting.DARK_GRAY));
-            event.getToolTip().add(Component.translatable("tooltip.wearable_toolbox.quick_equip")
-                    .withStyle(ChatFormatting.DARK_GRAY));
-        }
     }
 
     /**
