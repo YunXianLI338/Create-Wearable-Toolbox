@@ -1,6 +1,7 @@
 package com.minecart.wearabletoolbox.client;
 
 import com.minecart.wearabletoolbox.WearableToolbox;
+import com.minecart.wearabletoolbox.WearableToolboxConfig;
 import com.minecart.wearabletoolbox.common.EquippedToolbox;
 import com.minecart.wearabletoolbox.common.OpenToolboxPayload;
 import com.minecart.wearabletoolbox.common.ToolboxItems;
@@ -11,6 +12,8 @@ import com.mojang.math.Axis;
 import com.simibubi.create.AllDataComponents;
 import com.simibubi.create.AllItems;
 import com.simibubi.create.AllKeys;
+import com.simibubi.create.content.equipment.toolbox.ToolboxBlockEntity;
+import com.simibubi.create.content.equipment.toolbox.ToolboxHandler;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.entity.ArmorStandRenderer;
@@ -29,6 +32,8 @@ import net.neoforged.neoforge.client.event.RenderLivingEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.lwjgl.glfw.GLFW;
 
+import java.util.List;
+
 /**
  * 客户端按键处理：
  * <ul>
@@ -39,8 +44,14 @@ import org.lwjgl.glfw.GLFW;
 @EventBusSubscriber(modid = WearableToolbox.MODID, bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)
 public final class WearableToolboxClientEvents {
     private static boolean lastPosing;
+    private static boolean wasToolboxMenuOpen;
+    private static boolean suppressCreateMenu;
 
     private WearableToolboxClientEvents() {
+    }
+
+    public static boolean shouldSuppressCreateMenu() {
+        return suppressCreateMenu;
     }
 
     @SubscribeEvent
@@ -50,8 +61,17 @@ public final class WearableToolboxClientEvents {
             return;
         }
 
-        boolean posing = WearableToolboxClient.isToolboxScreenOpen()
-                && EquippedToolbox.find(minecraft.player) != null;
+        boolean screenOpen = WearableToolboxClient.isToolboxScreenOpen();
+        boolean posing = screenOpen && EquippedToolbox.find(minecraft.player) != null;
+        boolean menuOpen = WearableToolboxClient.isToolboxMenuScreenOpen();
+        if (menuOpen != wasToolboxMenuOpen) {
+            if (menuOpen) {
+                WearableToolboxClient.playToolboxOpenSound(minecraft.player);
+            } else {
+                WearableToolboxClient.playToolboxCloseSound(minecraft.player);
+            }
+        }
+        wasToolboxMenuOpen = menuOpen;
         if (posing != lastPosing) {
             PacketDistributor.sendToServer(new ToolboxPosePayload(posing));
             lastPosing = posing;
@@ -71,14 +91,16 @@ public final class WearableToolboxClientEvents {
     @SubscribeEvent
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         lastPosing = false;
+        wasToolboxMenuOpen = false;
         ToolboxPoseState.clearClient();
     }
 
     /**
-     * 玩家身上有工具箱时，优先于附近的放置版工具箱，直接打开可穿戴版径向菜单。
+     * 按配置决定本次 Alt 是打开穿戴版、放置版，还是先打开“选择工具箱”界面。
      */
     @SubscribeEvent(priority = net.neoforged.bus.api.EventPriority.HIGHEST)
     public static void onKeyInput(InputEvent.Key event) {
+        suppressCreateMenu = false;
         if (event.getAction() != GLFW.GLFW_PRESS) {
             return;
         }
@@ -101,11 +123,37 @@ public final class WearableToolboxClientEvents {
         }
 
         EquippedToolbox equipped = EquippedToolbox.find(player);
-        if (equipped == null) {
-            return;
-        }
+        WearableToolboxConfig.Priority priority = WearableToolboxConfig.priority();
+        List<ToolboxBlockEntity> nearby = ToolboxHandler.getNearest(player.level(), player, 8);
 
-        WearableToolboxRadialScreen.open(equipped.stack(), player);
+        switch (priority) {
+            case WEARABLE -> {
+                if (equipped != null) {
+                    suppressCreateMenu = true;
+                    WearableToolboxRadialScreen.openWearable(equipped.stack(), player);
+                }
+            }
+            case PLACED -> {
+                // 周围有放置版时交还给 Create；只有没有放置版时才打开穿戴版。
+                if (equipped != null && nearby.isEmpty()) {
+                    suppressCreateMenu = true;
+                    WearableToolboxRadialScreen.openWearable(equipped.stack(), player);
+                }
+            }
+            case EQUAL -> {
+                if (equipped == null) {
+                    // 没有穿戴版，交给 Create 处理放置版。
+                    return;
+                }
+                if (nearby.isEmpty()) {
+                    suppressCreateMenu = true;
+                    WearableToolboxRadialScreen.openWearable(equipped.stack(), player);
+                } else {
+                    suppressCreateMenu = true;
+                    WearableToolboxRadialScreen.openSelection(nearby, equipped.stack(), player);
+                }
+            }
+        }
     }
 
     /**

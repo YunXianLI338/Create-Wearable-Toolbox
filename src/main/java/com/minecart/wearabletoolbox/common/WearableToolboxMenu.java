@@ -5,6 +5,7 @@ import com.minecart.wearabletoolbox.mixin.ToolboxBlockEntityAccess;
 import com.simibubi.create.AllBlockEntityTypes;
 import com.simibubi.create.AllBlocks;
 import com.simibubi.create.AllDataComponents;
+import com.simibubi.create.content.equipment.toolbox.ToolboxBlock;
 import com.simibubi.create.content.equipment.toolbox.ToolboxBlockEntity;
 import com.simibubi.create.content.equipment.toolbox.ToolboxInventory;
 import com.simibubi.create.content.equipment.toolbox.ToolboxMenu;
@@ -274,8 +275,17 @@ public class WearableToolboxMenu extends ToolboxMenu {
      * 不进入世界的工具箱方块实体。只用于承载菜单/界面的库存与颜色。
      */
     private static class VirtualToolboxBlockEntity extends ToolboxBlockEntity {
+        private final DyeColor color;
+
         private VirtualToolboxBlockEntity(BlockState state) {
             super(AllBlockEntityTypes.TOOLBOX.get(), new BlockPos(0, -1000, 0), state);
+            this.color = state.getBlock() instanceof ToolboxBlock toolbox ? toolbox.getColor() : DyeColor.BROWN;
+        }
+
+        @Override
+        public DyeColor getColor() {
+            // 虚拟方块实体没有真实世界坐标，不能靠 getBlockState() 取颜色。
+            return color;
         }
 
         @Override

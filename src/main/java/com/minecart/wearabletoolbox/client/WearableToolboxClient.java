@@ -20,6 +20,8 @@ import net.minecraft.client.resources.PlayerSkin;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.level.GameType;
 import net.neoforged.api.distmarker.Dist;
@@ -86,6 +88,13 @@ public final class WearableToolboxClient {
         Minecraft minecraft = Minecraft.getInstance();
         return minecraft.screen instanceof WearableToolboxScreen
                 || minecraft.screen instanceof WearableToolboxRadialScreen;
+    }
+
+    /**
+     * 当前是否打开的是 V 键的八隔间界面（径向菜单不播放开关音效）。
+     */
+    public static boolean isToolboxMenuScreenOpen() {
+        return Minecraft.getInstance().screen instanceof WearableToolboxScreen;
     }
 
     @SubscribeEvent
@@ -182,5 +191,35 @@ public final class WearableToolboxClient {
             });
             addRenderableWidget(confirm);
         }
+    }
+
+    public static void playToolboxOpenSound(LocalPlayer player) {
+        if (player == null || player.level() == null) {
+            return;
+        }
+        // 与 Create ToolboxBlockEntity#tickAudio 打开盖子时相同的两层音效和音量。
+        player.level().playLocalSound(
+                player.getX(), player.getY(), player.getZ(),
+                SoundEvents.IRON_DOOR_OPEN, SoundSource.BLOCKS, 0.25F,
+                player.level().random.nextFloat() * 0.1F + 1.2F, true);
+        player.level().playLocalSound(
+                player.getX(), player.getY(), player.getZ(),
+                SoundEvents.CHEST_OPEN, SoundSource.BLOCKS, 0.1F,
+                player.level().random.nextFloat() * 0.1F + 1.1F, true);
+    }
+
+    public static void playToolboxCloseSound(LocalPlayer player) {
+        if (player == null || player.level() == null) {
+            return;
+        }
+        // Create 关盖过程先播铁门闭合，盖子落定时再播箱子闭合。
+        player.level().playLocalSound(
+                player.getX(), player.getY(), player.getZ(),
+                SoundEvents.IRON_DOOR_CLOSE, SoundSource.BLOCKS, 0.25F,
+                player.level().random.nextFloat() * 0.1F + 1.2F, true);
+        player.level().playLocalSound(
+                player.getX(), player.getY(), player.getZ(),
+                SoundEvents.CHEST_CLOSE, SoundSource.BLOCKS, 0.1F,
+                player.level().random.nextFloat() * 0.1F + 1.1F, true);
     }
 }

@@ -47,13 +47,15 @@
 
 - `"手臂前伸" = true`：打开穿戴版工具箱界面时，玩家双臂向前伸出。
 - `"低头" = true`：打开穿戴版工具箱界面时，玩家朝身体正前方低头。
+- `"工具箱优先级" = "EQUAL"`：`EQUAL` 时穿戴版与周围放置版一起进入选择界面；`WEARABLE` 只打开穿戴版；`PLACED` 周围有放置版时只打开放置版。
 
 ```toml
 "手臂前伸" = true
 "低头" = true
+"工具箱优先级" = "EQUAL"
 ```
 
-两个选项互不影响，设为 `false` 即可关闭对应动作。动作与开盖模型会同步给附近玩家；配置只控制手臂与低头动作是否渲染。
+两个姿势选项互不影响，设为 `false` 即可关闭对应动作。动作与开盖模型会同步给附近玩家；配置只控制手臂与低头动作是否渲染。
 
 ## 构建与运行
 
@@ -68,7 +70,7 @@ gradlew.bat runData
 ./gradlew build
 ```
 
-- 构建产物：`build/libs/wearable_toolbox-0.1.4.jar`，放入客户端 `mods/` 即可。
+- 构建产物：`build/libs/wearable_toolbox-0.1.6.jar`，放入客户端 `mods/` 即可。
 - 若网络无法访问 `maven.neoforged.net`，可改用 `gradlew.bat build --offline`；本机 Gradle 缓存中已有 21.1.248 全套依赖。
 - 首次构建会下载 Gradle、NeoForge 并执行 NeoForm 反编译，耗时较长（网络慢时可达一小时），日志暂时没有输出并不代表卡死。
 - `runServer` 首次启动后需把 `run/eula.txt` 改为 `eula=true`；局域网调试可再把 `server.properties` 的 `online-mode` 设为 `false`。

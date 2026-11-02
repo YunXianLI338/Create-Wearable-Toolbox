@@ -2,14 +2,19 @@
   "key.categories.wearable_toolbox": "可穿戴的工具箱",
   "key.wearable_toolbox.open": "打开工具箱",
   "tooltip.wearable_toolbox.equip": "可装备在胸甲栏或胸饰栏",
-  "tooltip.wearable_toolbox.open": "按 V 键打开",
-  "tooltip.wearable_toolbox.alt": "按住 Alt 使用工具箱",
-  "tooltip.wearable_toolbox.quick_equip": "Shift + 左键快速穿戴",
+  "tooltip.wearable_toolbox.open": "按 %s 键打开",
+  "tooltip.wearable_toolbox.alt": "按住 %s 使用工具箱",
+  "tooltip.wearable_toolbox.quick_equip": "%s + 左键快速穿戴",
   "tooltip.wearable_toolbox.deposit_all": "把物品收回工具箱",
   "message.wearable_toolbox.bound": "已绑定：%s",
   "message.wearable_toolbox.unbound": "已解除快捷栏绑定",
   "wearable_toolbox.configuration.手臂前伸": "手臂前伸",
   "wearable_toolbox.configuration.手臂前伸.tooltip": "打开可穿戴工具箱界面时，是否让本地玩家双臂向前伸出。",
   "wearable_toolbox.configuration.低头": "低头",
-  "wearable_toolbox.configuration.低头.tooltip": "打开可穿戴工具箱界面时，是否让本地玩家朝身体正前方低头。"
+  "wearable_toolbox.configuration.低头.tooltip": "打开可穿戴工具箱界面时，是否让本地玩家朝身体正前方低头。",
+  "wearable_toolbox.configuration.工具箱优先级": "工具箱优先级",
+  "wearable_toolbox.configuration.工具箱优先级.tooltip": "平级：穿戴版与周围放置版一起出现在选择界面；穿戴工具箱优先：只打开穿戴版；放置工具箱优先：周围有放置版时只打开放置版。",
+  "wearable_toolbox.config.toolbox_priority.equal": "平级",
+  "wearable_toolbox.config.toolbox_priority.wearable": "穿戴工具箱优先",
+  "wearable_toolbox.config.toolbox_priority.placed": "放置工具箱优先"
 }

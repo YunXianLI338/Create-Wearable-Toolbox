@@ -2,6 +2,24 @@
 
 [中文](CHANGELOG.md)
 
+## 0.1.6 — 2026-11-01
+
+### Added
+
+- Added a "Toolbox Priority" setting with Equal, Wearable First, and Placed First options.
+- Tooltips now read the actual key bindings instead of hardcoded key names.
+
+## 0.1.5 — 2026-10-31
+
+### Added
+
+- Plays the same opening sound as a placed toolbox when the wearable toolbox V-key interface opens.
+- Plays the same closing sound as a placed toolbox when the wearable toolbox V-key interface closes.
+
+### Fixed
+
+- Fixed being unable to take items from another compartment in the radial menu while holding an item.
+
 ## 0.1.4 — 2026-10-30
 
 ### Fixed

@@ -2,6 +2,7 @@ package com.minecart.wearabletoolbox.common;
 
 import com.minecart.wearabletoolbox.mixin.ToolboxInventoryAccess;
 import com.simibubi.create.AllDataComponents;
+import com.simibubi.create.content.equipment.toolbox.ItemReturnInvWrapper;
 import com.simibubi.create.content.equipment.toolbox.ToolboxInventory;
 import com.simibubi.create.foundation.networking.ISyncPersistentData;
 import net.createmod.catnip.platform.CatnipServices;
@@ -12,6 +13,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.neoforged.neoforge.items.ItemHandlerHelper;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.List;
@@ -114,7 +116,7 @@ public final class WearableToolboxBindings {
     }
 
     /**
-     * 绑定一个隔间到快捷栏。与 Create 一致：不立即搬动当前物品，而是在 tick 中补充/回收。
+     * 绑定一个隔间到快捷栏。手上物品与目标过滤器不匹配时先收进工具箱，之后由 tick 补充/回收。
      */
     public static void bind(ServerPlayer player, int hotbarSlot, int compartment) {
         if (hotbarSlot < 0 || hotbarSlot >= Inventory.getSelectionSize() || compartment < 0 || compartment >= 8) {
@@ -136,12 +138,15 @@ public final class WearableToolboxBindings {
         }
         // 过滤器只是代表物，隔间里可能已经空了（物品正被拿在快捷栏里）。
         // 此时再绑定会先解掉旧绑定，然后从空隔间里“取出空气”。
-        if (!hasCompartmentItems(inventory, compartment)) {
+        // 若快捷栏里已经是同类物品，则本次绑定仍然有意义（后续 tick 会维持数量）。
+        ItemStack handBeforeUnbind = player.getInventory().getItem(hotbarSlot);
+        if (!hasCompartmentItems(inventory, compartment)
+                && !ToolboxInventory.canItemsShareCompartment(handBeforeUnbind, filters.get(compartment))) {
             return;
         }
 
-        // 同一快捷栏已有绑定：先把旧隔间的物品收回，再改绑。
-        unbind(player, hotbarSlot);
+        // 与 Create 的 ToolboxEquipPacket 一致：先解除该快捷栏的旧绑定，再处理手上物品。
+        unbind(player, hotbarSlot, false);
 
         equipped = EquippedToolbox.find(player);
         if (equipped == null) {
@@ -153,6 +158,30 @@ public final class WearableToolboxBindings {
             inventory = new ToolboxInventory(null);
         }
         filters = filters(inventory);
+
+        // 与 Create 的 ToolboxEquipPacket 一致：手上拿着不属于目标隔间的物品时，
+        // 先把它收进工具箱，否则下一次 tick 会因为“快捷栏物品与过滤器不匹配”直接解绑。
+        ItemStack hand = player.getInventory().getItem(hotbarSlot);
+        ItemStack filter = filters.get(compartment);
+        if (!hand.isEmpty() && !ToolboxInventory.canItemsShareCompartment(hand, filter)) {
+            ItemStack toInsert = hand.copy();
+            ItemStack[] remainder = {toInsert};
+            inventory.inLimitedMode(inv ->
+                    remainder[0] = ItemHandlerHelper.insertItemStacked(inv, toInsert, false)
+            );
+            if (!remainder[0].isEmpty()) {
+                remainder[0] = ItemHandlerHelper.insertItemStacked(
+                        new ItemReturnInvWrapper(player.getInventory()), remainder[0], false
+                );
+            }
+            if (remainder[0].getCount() != toInsert.getCount()) {
+                player.getInventory().setItem(hotbarSlot, remainder[0]);
+                player.getInventory().setChanged();
+                toolbox.set(AllDataComponents.TOOLBOX_INVENTORY, inventory);
+                EquippedToolbox.set(player, equipped.curioSlot(), toolbox);
+                syncToolbox(player, equipped.curioSlot(), toolbox);
+            }
+        }
 
         UUID id = toolbox.get(AllDataComponents.TOOLBOX_UUID);
         if (id == null) {
@@ -182,6 +211,13 @@ public final class WearableToolboxBindings {
      * 解除快捷栏绑定，并把该快捷栏里的同类物品收回工具箱。
      */
     public static void unbind(ServerPlayer player, int hotbarSlot) {
+        unbind(player, hotbarSlot, true);
+    }
+
+    /**
+     * @param announce 是否提示玩家；重新绑定时只做静默解绑。
+     */
+    public static void unbind(ServerPlayer player, int hotbarSlot, boolean announce) {
         if (hotbarSlot < 0 || hotbarSlot >= Inventory.getSelectionSize()) {
             return;
         }
@@ -218,10 +254,12 @@ public final class WearableToolboxBindings {
 
         saveRoot(player, root);
         syncData(player);
-        player.displayClientMessage(
-                Component.translatable("message.wearable_toolbox.unbound").withStyle(ChatFormatting.GRAY),
-                true
-        );
+        if (announce) {
+            player.displayClientMessage(
+                    Component.translatable("message.wearable_toolbox.unbound").withStyle(ChatFormatting.GRAY),
+                    true
+            );
+        }
     }
 
     /**
@@ -279,6 +317,7 @@ public final class WearableToolboxBindings {
 
             ItemStack filter = filters.get(compartment);
             if (filter.isEmpty()) {
+                // 与 Create 的 tickPlayers 一致：只解除绑定，不把快捷栏物品强行塞回去。
                 root.remove(key);
                 rootChanged = true;
                 continue;
