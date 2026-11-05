@@ -1,5 +1,7 @@
 package com.minecart.wearabletoolbox.client;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.minecart.wearabletoolbox.WearableToolbox;
 import com.minecart.wearabletoolbox.common.EquippedToolbox;
 import com.minecart.wearabletoolbox.common.ToolboxItems;
@@ -19,21 +21,25 @@ import net.minecraft.client.renderer.block.model.BlockModel;
 import net.minecraft.client.renderer.entity.RenderLayerParent;
 import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.model.ModelState;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
-import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.item.DyeColor;
 
 import javax.annotation.Nullable;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 把 assets/wearable_toolbox/models/brown.json 作为身上工具箱的展示模型。
@@ -43,10 +49,10 @@ import java.util.Map;
  * 这样能保留 Blockbench 里逐面的 UV 与元素旋转。打开工具箱界面时使用 {@code brown_on.json}。</p>
  */
 public final class ToolboxArmorLayer extends RenderLayer<AbstractClientPlayer, PlayerModel<AbstractClientPlayer>> {
-    private static final ResourceLocation MODEL_LOCATION =
-            new ResourceLocation(WearableToolbox.MODID, "models/brown.json");
-    private static final ResourceLocation OPEN_MODEL_LOCATION =
-            new ResourceLocation(WearableToolbox.MODID, "models/brown_on.json");
+    private static final ResourceLocation BROWN_MODEL =
+            new ResourceLocation(WearableToolbox.MODID, "models/brown");
+    private static final ResourceLocation BROWN_OPEN_MODEL =
+            new ResourceLocation(WearableToolbox.MODID, "models/brown_on");
     private static final ModelState MODEL_STATE = new ModelState() {
     };
 
@@ -128,10 +134,10 @@ public final class ToolboxArmorLayer extends RenderLayer<AbstractClientPlayer, P
             poseStack.mulPose(Axis.ZP.rotationDegrees(180.0F));
         }
 
-        VertexConsumer consumer = buffer.getBuffer(RenderType.entityCutoutNoCull(InventoryMenu.BLOCK_ATLAS));
+        VertexConsumer consumer = buffer.getBuffer(RenderType.entityCutoutNoCull(TextureAtlas.LOCATION_BLOCKS));
         PoseStack.Pose pose = poseStack.last();
         for (BakedQuad quad : modelQuads) {
-            consumer.putBulkData(pose, quad, 1.0F, 1.0F, 1.0F, 1.0F, packedLight, OverlayTexture.NO_OVERLAY, false);
+            consumer.putBulkData(pose, quad, 1.0F, 1.0F, 1.0F, 1.0F, packedLight, OverlayTexture.NO_OVERLAY, true);
         }
         poseStack.popPose();
     }
@@ -151,46 +157,47 @@ public final class ToolboxArmorLayer extends RenderLayer<AbstractClientPlayer, P
 
     private static List<BakedQuad> getQuads(boolean open, @Nullable DyeColor color) {
         DyeColor key = color == null ? DyeColor.BROWN : color;
-        if (!open) {
-            return NORMAL_QUADS.computeIfAbsent(key,
-                    c -> loadQuads(MODEL_LOCATION, false, c));
-        }
-
-        List<BakedQuad> openModel = OPEN_QUADS.get(key);
-        if (openModel == null) {
-            openModel = loadQuads(OPEN_MODEL_LOCATION, true, key);
-            if (openModel.isEmpty()) {
-                // 打开模型缺失或损坏时退回普通模型，避免整件装备消失。
-                return NORMAL_QUADS.computeIfAbsent(key,
-                        c -> loadQuads(MODEL_LOCATION, false, c));
-            }
-            OPEN_QUADS.put(key, openModel);
-        }
-        return openModel;
+        Map<DyeColor, List<BakedQuad>> cache = open ? OPEN_QUADS : NORMAL_QUADS;
+        return cache.computeIfAbsent(key, c -> loadQuads(open, c));
     }
 
-    private static List<BakedQuad> loadQuads(ResourceLocation location, boolean optional, DyeColor color) {
+    private static List<BakedQuad> loadQuads(boolean open, DyeColor color) {
+        ResourceLocation preferred = new ResourceLocation(
+                WearableToolbox.MODID,
+                "models/" + color.getSerializedName() + (open ? "_on" : "")
+        );
+        List<BakedQuad> quads = loadModelQuads(preferred, color, false);
+        if (!quads.isEmpty() || color == DyeColor.BROWN) {
+            return quads;
+        }
+
+        // 自定义模型缺失时退回棕色模型，并继续用对应颜色的方块贴图。
+        return loadModelQuads(open ? BROWN_OPEN_MODEL : BROWN_MODEL, color, true);
+    }
+
+    private static List<BakedQuad> loadModelQuads(ResourceLocation location, DyeColor color, boolean forceColorTexture) {
         try {
-            Resource resource = Minecraft.getInstance().getResourceManager()
-                    .getResource(location)
-                    .orElseThrow();
-            BlockModel model;
-            try (InputStream stream = resource.open()) {
-                model = BlockModel.fromStream(new InputStreamReader(stream, StandardCharsets.UTF_8));
+            String json = resolveModelJson(location, new HashSet<>());
+            if (json == null) {
+                return List.of();
             }
 
-            // 16 色工具箱共用同一套 UV，只是方块图集里的贴图不同。
-            ResourceLocation texture = new ResourceLocation(
-                    "create", "block/toolbox/" + color.getSerializedName());
-            TextureAtlasSprite colorSprite = Minecraft.getInstance()
-                    .getTextureAtlas(InventoryMenu.BLOCK_ATLAS)
-                    .apply(texture);
+            BlockModel model;
+            try (Reader reader = new StringReader(json)) {
+                model = BlockModel.fromStream(reader);
+            }
+
+            TextureAtlasSprite colorSprite = forceColorTexture
+                    ? Minecraft.getInstance().getTextureAtlas(TextureAtlas.LOCATION_BLOCKS)
+                    .apply(new ResourceLocation(
+                            "create", "block/toolbox/" + color.getSerializedName()))
+                    : null;
 
             List<BakedQuad> baked = new ArrayList<>();
             for (BlockElement element : model.getElements()) {
                 for (var entry : element.faces.entrySet()) {
                     BlockElementFace face = entry.getValue();
-                    TextureAtlasSprite sprite = "#0".equals(face.texture)
+                    TextureAtlasSprite sprite = forceColorTexture && "#0".equals(face.texture)
                             ? colorSprite
                             : model.getMaterial(face.texture).sprite();
                     baked.add(BlockModel.bakeFace(element, face, sprite, entry.getKey(), MODEL_STATE, location));
@@ -198,10 +205,58 @@ public final class ToolboxArmorLayer extends RenderLayer<AbstractClientPlayer, P
             }
             return List.copyOf(baked);
         } catch (Exception exception) {
-            if (!optional) {
-                WearableToolbox.LOGGER.error("无法加载可穿戴工具箱模型 {}（颜色 {}）", location, color, exception);
-            }
+            WearableToolbox.LOGGER.error("无法加载可穿戴工具箱模型 {}（颜色 {}）", location, color, exception);
             return List.of();
+        }
+    }
+
+    /**
+     * 读取模型并解析 {@code parent} 链；子模型可以只声明 parent + 覆盖 textures。
+     */
+    @Nullable
+    private static String resolveModelJson(ResourceLocation location, Set<ResourceLocation> visited) {
+        if (!visited.add(location)) {
+            return null;
+        }
+        try {
+            Resource resource = Minecraft.getInstance().getResourceManager()
+                    .getResource(new ResourceLocation(location.getNamespace(), location.getPath() + ".json"))
+                    .orElse(null);
+            if (resource == null) {
+                return null;
+            }
+
+            String raw;
+            try (InputStream stream = resource.open()) {
+                raw = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+            }
+
+            JsonObject child = JsonParser.parseString(raw).getAsJsonObject();
+            if (child.has("elements") || !child.has("parent")) {
+                return raw;
+            }
+
+            ResourceLocation parentId = new ResourceLocation(child.get("parent").getAsString());
+            String parentJson = resolveModelJson(parentId, visited);
+            if (parentJson == null) {
+                return raw;
+            }
+
+            JsonObject merged = JsonParser.parseString(parentJson).getAsJsonObject();
+            if (child.has("textures")) {
+                JsonObject textures = merged.has("textures")
+                        ? merged.getAsJsonObject("textures").deepCopy()
+                        : new JsonObject();
+                for (var entry : child.getAsJsonObject("textures").entrySet()) {
+                    textures.add(entry.getKey(), entry.getValue());
+                }
+                merged.add("textures", textures);
+            }
+            merged.remove("parent");
+            return merged.toString();
+        } catch (Exception exception) {
+            WearableToolbox.LOGGER.error("无法解析可穿戴工具箱模型 {}", location, exception);
+            return null;
         }
     }
 }
