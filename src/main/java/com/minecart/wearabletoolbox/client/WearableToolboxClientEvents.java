@@ -82,8 +82,14 @@ public final class WearableToolboxClientEvents {
         }
 
         while (WearableToolboxClient.OPEN_TOOLBOX.consumeClick()) {
-            if (EquippedToolbox.find(minecraft.player) != null) {
-                PacketDistributor.sendToServer(new OpenToolboxPayload());
+            List<EquippedToolbox> choices = candidates(minecraft.player);
+            if (choices.size() == 1) {
+                EquippedToolbox source = choices.get(0);
+                PacketDistributor.sendToServer(
+                        new OpenToolboxPayload(source.curioSlot(), source.inventorySlot())
+                );
+            } else if (!choices.isEmpty()) {
+                WearableToolboxRadialScreen.openMenuChoice(choices, minecraft.player);
             }
         }
     }
@@ -122,37 +128,53 @@ public final class WearableToolboxClientEvents {
             return;
         }
 
-        EquippedToolbox equipped = EquippedToolbox.find(player);
         WearableToolboxConfig.Priority priority = WearableToolboxConfig.priority();
         List<ToolboxBlockEntity> nearby = ToolboxHandler.getNearest(player.level(), player, 8);
+        List<EquippedToolbox> equippedBoxes = candidates(player);
 
         switch (priority) {
             case WEARABLE -> {
-                if (equipped != null) {
+                if (!equippedBoxes.isEmpty()) {
                     suppressCreateMenu = true;
-                    WearableToolboxRadialScreen.openWearable(equipped.stack(), player);
+                    openEquipped(equippedBoxes, List.of(), player);
                 }
             }
             case PLACED -> {
                 // 周围有放置版时交还给 Create；只有没有放置版时才打开穿戴版。
-                if (equipped != null && nearby.isEmpty()) {
-                    suppressCreateMenu = true;
-                    WearableToolboxRadialScreen.openWearable(equipped.stack(), player);
+                if (!nearby.isEmpty() || equippedBoxes.isEmpty()) {
+                    return;
                 }
+                suppressCreateMenu = true;
+                openEquipped(equippedBoxes, List.of(), player);
             }
             case EQUAL -> {
-                if (equipped == null) {
+                if (equippedBoxes.isEmpty()) {
                     // 没有穿戴版，交给 Create 处理放置版。
                     return;
                 }
+                suppressCreateMenu = true;
                 if (nearby.isEmpty()) {
-                    suppressCreateMenu = true;
-                    WearableToolboxRadialScreen.openWearable(equipped.stack(), player);
+                    openEquipped(equippedBoxes, List.of(), player);
                 } else {
-                    suppressCreateMenu = true;
-                    WearableToolboxRadialScreen.openSelection(nearby, equipped.stack(), player);
+                    openEquipped(equippedBoxes, nearby, player);
                 }
             }
+        }
+    }
+
+    private static List<EquippedToolbox> candidates(LocalPlayer player) {
+        return WearableToolboxConfig.inventoryToolboxes()
+                ? EquippedToolbox.findAllIncludingInventory(player)
+                : EquippedToolbox.findAll(player);
+    }
+
+    private static void openEquipped(List<EquippedToolbox> equippedBoxes,
+                                     List<ToolboxBlockEntity> nearby,
+                                     LocalPlayer player) {
+        if (equippedBoxes.size() == 1 && nearby.isEmpty()) {
+            WearableToolboxRadialScreen.openWearable(equippedBoxes.get(0), player);
+        } else {
+            WearableToolboxRadialScreen.openSelection(equippedBoxes, nearby, player);
         }
     }
 

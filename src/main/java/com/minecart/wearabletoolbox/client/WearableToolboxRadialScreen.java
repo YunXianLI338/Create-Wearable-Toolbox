@@ -1,6 +1,8 @@
 package com.minecart.wearabletoolbox.client;
 
 import com.minecart.wearabletoolbox.common.DepositAllPayload;
+import com.minecart.wearabletoolbox.common.EquippedToolbox;
+import com.minecart.wearabletoolbox.common.OpenToolboxPayload;
 import com.minecart.wearabletoolbox.common.WearableToolboxBindPayload;
 import com.minecart.wearabletoolbox.common.WearableToolboxBindings;
 import com.minecart.wearabletoolbox.common.WearableToolboxMenu;
@@ -17,7 +19,9 @@ import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.ArrayList;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 可穿戴工具箱的径向菜单。
@@ -31,53 +35,106 @@ public final class WearableToolboxRadialScreen extends RadialToolboxMenu {
     private static final int UNEQUIP = -5;
     private static final int DEPOSIT = -7;
 
-    private final ToolboxBlockEntity wearable;
+    private final Map<ToolboxBlockEntity, EquippedToolbox> sources;
+    private final boolean openMode;
+    private boolean opening;
 
     private WearableToolboxRadialScreen(List<ToolboxBlockEntity> toolboxes, State state,
-                                        ToolboxBlockEntity selectedBox, ToolboxBlockEntity wearable) {
+                                        ToolboxBlockEntity selectedBox,
+                                        Map<ToolboxBlockEntity, EquippedToolbox> sources,
+                                        boolean openMode) {
         super(toolboxes, state, selectedBox);
-        this.wearable = wearable;
+        this.sources = sources;
+        this.openMode = openMode;
     }
 
     /**
-     * 只打开穿戴版工具箱的物品菜单（穿戴优先，或周围没有放置版工具箱）。
+     * 只有一个穿戴版工具箱时，直接打开物品菜单。
      */
-    public static void openWearable(ItemStack stack, Player player) {
-        ToolboxBlockEntity toolbox = WearableToolboxMenu.createVirtualBlockEntity(stack, player);
+    public static void openWearable(EquippedToolbox equipped, Player player) {
+        ToolboxBlockEntity toolbox = WearableToolboxMenu.createVirtualBlockEntity(equipped.stack(), player);
         boolean bound = WearableToolboxBindings.hasBinding(player, player.getInventory().selected);
+        Map<ToolboxBlockEntity, EquippedToolbox> sources = new IdentityHashMap<>();
+        sources.put(toolbox, equipped);
         ScreenOpener.open(new WearableToolboxRadialScreen(
                 List.of(toolbox),
                 bound ? State.SELECT_ITEM_UNEQUIP : State.SELECT_ITEM,
                 toolbox,
-                toolbox
+                sources,
+                false
         ));
     }
 
     /**
-     * 兼容旧调用点。
+     * 把多个穿戴版和周围放置版一起放进 Create 的“选择工具箱”状态。
      */
-    public static void open(ItemStack stack, Player player) {
-        openWearable(stack, player);
-    }
-
-    /**
-     * 把穿戴版和周围放置版一起放进 Create 的“选择工具箱”状态。
-     * 第一个位置放穿戴版，后面是 Create 已按距离排好序的放置版工具箱。
-     */
-    public static void openSelection(List<ToolboxBlockEntity> nearby, ItemStack stack, Player player) {
-        ToolboxBlockEntity wearable = WearableToolboxMenu.createVirtualBlockEntity(stack, player);
+    public static void openSelection(List<EquippedToolbox> equippedBoxes,
+                                     List<ToolboxBlockEntity> nearby,
+                                     Player player) {
         List<ToolboxBlockEntity> boxes = new ArrayList<>();
-        boxes.add(wearable);
+        Map<ToolboxBlockEntity, EquippedToolbox> sources = new IdentityHashMap<>();
+        for (EquippedToolbox equipped : equippedBoxes) {
+            ToolboxBlockEntity virtual = WearableToolboxMenu.createVirtualBlockEntity(equipped.stack(), player);
+            boxes.add(virtual);
+            sources.put(virtual, equipped);
+        }
         boxes.addAll(nearby);
         if (boxes.size() > 8) {
             boxes = new ArrayList<>(boxes.subList(0, 8));
         }
+
+        boolean singleEquipped = boxes.size() == 1 && sources.containsKey(boxes.get(0));
+        State state = boxes.size() > 1
+                ? State.SELECT_BOX
+                : (WearableToolboxBindings.hasBinding(player, player.getInventory().selected)
+                ? State.SELECT_ITEM_UNEQUIP
+                : State.SELECT_ITEM);
+        ToolboxBlockEntity selected = singleEquipped ? boxes.get(0) : null;
+
+        ScreenOpener.open(new WearableToolboxRadialScreen(boxes, state, selected, sources, false));
+    }
+
+    /**
+     * V 键：在多个可选工具箱之间先选择，选中后打开对应工具箱。
+     */
+    public static void openMenuChoice(List<EquippedToolbox> choices, Player player) {
+        List<ToolboxBlockEntity> boxes = new ArrayList<>();
+        Map<ToolboxBlockEntity, EquippedToolbox> sources = new IdentityHashMap<>();
+        for (EquippedToolbox choice : choices) {
+            ToolboxBlockEntity virtual = WearableToolboxMenu.createVirtualBlockEntity(choice.stack(), player);
+            boxes.add(virtual);
+            sources.put(virtual, choice);
+        }
+        if (boxes.size() > 8) {
+            boxes = new ArrayList<>(boxes.subList(0, 8));
+        }
         ScreenOpener.open(new WearableToolboxRadialScreen(
-                boxes,
-                State.SELECT_BOX,
-                null,
-                wearable
+                boxes, State.SELECT_BOX, null, sources, true
         ));
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        boolean handled = super.mouseClicked(mouseX, mouseY, button);
+        if (!openMode || opening) {
+            return handled;
+        }
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.screen != this) {
+            // super 已经关闭界面，removed() 会负责发包。
+            return handled;
+        }
+
+        RadialToolboxMenuAccess access = (RadialToolboxMenuAccess) (Object) this;
+        EquippedToolbox choice = sources.get(access.wearableToolbox$selectedBox());
+        if (choice != null) {
+            opening = true;
+            PacketDistributor.sendToServer(
+                    new OpenToolboxPayload(choice.curioSlot(), choice.inventorySlot())
+            );
+            minecraft.setScreen(null);
+        }
+        return handled;
     }
 
     @Override
@@ -93,11 +150,25 @@ public final class WearableToolboxRadialScreen extends RadialToolboxMenu {
                 : access.wearableToolbox$hoveredSlot();
         ToolboxBlockEntity selectedBox = access.wearableToolbox$selectedBox();
 
+        if (openMode) {
+            if (opening) {
+                return;
+            }
+            EquippedToolbox choice = sources.get(selectedBox);
+            if (choice != null) {
+                opening = true;
+                PacketDistributor.sendToServer(
+                        new OpenToolboxPayload(choice.curioSlot(), choice.inventorySlot())
+                );
+            }
+            return;
+        }
+
         if (selected == DEPOSIT) {
             if (selectedBox == null) {
                 // 选择工具箱界面：让 Create 把每个放置版工具箱都存入，再处理穿戴版。
                 super.removed();
-            } else if (selectedBox != wearable) {
+            } else if (!sources.containsKey(selectedBox)) {
                 super.removed();
                 return;
             }
@@ -106,13 +177,14 @@ public final class WearableToolboxRadialScreen extends RadialToolboxMenu {
         }
 
         // 真实工具箱仍走 Create 的 ToolboxEquipPacket。
-        if (selectedBox == null || selectedBox != wearable) {
+        if (selectedBox == null || !sources.containsKey(selectedBox)) {
             super.removed();
             return;
         }
 
+        EquippedToolbox source = sources.get(selectedBox);
         if (selected == UNEQUIP) {
-            send(-1, minecraft.player);
+            send(-1, source, minecraft.player);
             return;
         }
         if (selected < 0) {
@@ -128,12 +200,15 @@ public final class WearableToolboxRadialScreen extends RadialToolboxMenu {
             return;
         }
 
-        send(selected, minecraft.player);
+        send(selected, source, minecraft.player);
     }
 
-    private static void send(int compartment, Player player) {
-        PacketDistributor.sendToServer(
-                new WearableToolboxBindPayload(compartment, player.getInventory().selected)
-        );
+    private static void send(int compartment, EquippedToolbox source, Player player) {
+        PacketDistributor.sendToServer(new WearableToolboxBindPayload(
+                compartment,
+                player.getInventory().selected,
+                source.curioSlot(),
+                source.inventorySlot()
+        ));
     }
 }

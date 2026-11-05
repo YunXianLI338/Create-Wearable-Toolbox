@@ -12,6 +12,8 @@
   "wearable_toolbox.configuration.手臂前伸.tooltip": "打开可穿戴工具箱界面时，是否让本地玩家双臂向前伸出。",
   "wearable_toolbox.configuration.低头": "低头",
   "wearable_toolbox.configuration.低头.tooltip": "打开可穿戴工具箱界面时，是否让本地玩家朝身体正前方低头。",
+  "wearable_toolbox.configuration.物品栏内工具箱快捷打开": "物品栏内工具箱快捷打开",
+  "wearable_toolbox.configuration.物品栏内工具箱快捷打开.tooltip": "允许物品栏中未穿戴的工具箱也用快捷键打开；有多个时先显示选择界面。",
   "wearable_toolbox.configuration.工具箱优先级": "工具箱优先级",
   "wearable_toolbox.configuration.工具箱优先级.tooltip": "平级：穿戴版与周围放置版一起出现在选择界面；穿戴工具箱优先：只打开穿戴版；放置工具箱优先：周围有放置版时只打开放置版。",
   "wearable_toolbox.config.toolbox_priority.equal": "平级",

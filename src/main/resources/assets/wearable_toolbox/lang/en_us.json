@@ -12,6 +12,8 @@
   "wearable_toolbox.configuration.手臂前伸.tooltip": "Whether the local player raises both arms while a wearable toolbox screen is open.",
   "wearable_toolbox.configuration.低头": "Lower Head",
   "wearable_toolbox.configuration.低头.tooltip": "Whether the local player looks down while a wearable toolbox screen is open.",
+  "wearable_toolbox.configuration.物品栏内工具箱快捷打开": "Open Toolboxes From Inventory",
+  "wearable_toolbox.configuration.物品栏内工具箱快捷打开.tooltip": "Whether toolboxes in the inventory can also be opened with the shortcut. If several are available, a selection screen opens first.",
   "wearable_toolbox.configuration.工具箱优先级": "Toolbox Priority",
   "wearable_toolbox.configuration.工具箱优先级.tooltip": "Equal: wearable and nearby placed toolboxes appear in the toolbox selection first; Wearable: only the worn toolbox opens; Placed: nearby placed toolboxes take priority.",
   "wearable_toolbox.config.toolbox_priority.equal": "Equal",

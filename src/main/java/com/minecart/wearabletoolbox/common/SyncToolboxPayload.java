@@ -17,7 +17,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * 径向菜单时读的是客户端本地物品栈。仅依赖原版装备同步在部分情况下会拿到旧组件，
  * 因此每次写回装备槽后主动发一份最新物品栈。</p>
  */
-public record SyncToolboxPayload(ItemStack stack, int curioSlot) implements CustomPacketPayload {
+public record SyncToolboxPayload(ItemStack stack, int curioSlot, int inventorySlot) implements CustomPacketPayload {
     public static final Type<SyncToolboxPayload> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(WearableToolbox.MODID, "sync_toolbox"));
 
@@ -25,6 +25,7 @@ public record SyncToolboxPayload(ItemStack stack, int curioSlot) implements Cust
             StreamCodec.composite(
                     ItemStack.STREAM_CODEC, SyncToolboxPayload::stack,
                     ByteBufCodecs.VAR_INT, SyncToolboxPayload::curioSlot,
+                    ByteBufCodecs.VAR_INT, SyncToolboxPayload::inventorySlot,
                     SyncToolboxPayload::new
             );
 
@@ -37,7 +38,7 @@ public record SyncToolboxPayload(ItemStack stack, int curioSlot) implements Cust
         context.enqueueWork(() -> {
             Player player = context.player();
             if (player != null) {
-                EquippedToolbox.set(player, payload.curioSlot, payload.stack);
+                EquippedToolbox.set(player, payload.curioSlot, payload.inventorySlot, payload.stack);
                 if (player.containerMenu instanceof WearableToolboxMenu menu) {
                     menu.refreshFromStack(payload.stack);
                 }

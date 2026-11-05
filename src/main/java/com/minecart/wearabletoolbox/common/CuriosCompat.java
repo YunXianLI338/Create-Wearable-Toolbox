@@ -8,6 +8,8 @@ import top.theillusivec4.curios.api.type.inventory.ICurioStacksHandler;
 import top.theillusivec4.curios.api.type.inventory.IDynamicStackHandler;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -22,23 +24,35 @@ final class CuriosCompat {
 
     @Nullable
     static EquippedToolbox findBody(Player player) {
+        List<EquippedToolbox> all = findAllBodies(player);
+        return all.isEmpty() ? null : all.get(0);
+    }
+
+    @Nullable
+    static EquippedToolbox findBodyAt(Player player, int slot) {
+        ItemStack stack = getBody(player, slot);
+        return ToolboxItems.isToolbox(stack) ? new EquippedToolbox(stack, slot) : null;
+    }
+
+    static List<EquippedToolbox> findAllBodies(Player player) {
+        List<EquippedToolbox> result = new ArrayList<>();
         Optional<ICuriosItemHandler> curios = CuriosApi.getCuriosInventory(player);
         if (curios.isEmpty()) {
-            return null;
+            return result;
         }
         Optional<ICurioStacksHandler> handler = curios.get().getStacksHandler(EquippedToolbox.CURIO_SLOT);
         if (handler.isEmpty()) {
-            return null;
+            return result;
         }
 
         IDynamicStackHandler stacks = handler.get().getStacks();
         for (int slot = 0; slot < stacks.getSlots(); slot++) {
             ItemStack stack = stacks.getStackInSlot(slot);
             if (ToolboxItems.isToolbox(stack)) {
-                return new EquippedToolbox(stack, slot);
+                result.add(new EquippedToolbox(stack, slot));
             }
         }
-        return null;
+        return result;
     }
 
     static void setBody(Player player, int slot, ItemStack stack) {

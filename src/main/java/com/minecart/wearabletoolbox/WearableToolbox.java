@@ -63,7 +63,7 @@ public class WearableToolbox {
         registrar.playToServer(
                 OpenToolboxPayload.TYPE,
                 OpenToolboxPayload.STREAM_CODEC,
-                (payload, context) -> context.enqueueWork(() -> OpenToolboxPayload.handle(context.player()))
+                (payload, context) -> context.enqueueWork(() -> OpenToolboxPayload.handle(context.player(), payload))
         );
         registrar.playToServer(
                 WearableToolboxBindPayload.TYPE,
