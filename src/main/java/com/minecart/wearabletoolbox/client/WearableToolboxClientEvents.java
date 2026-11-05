@@ -85,8 +85,11 @@ public final class WearableToolboxClientEvents {
         }
 
         while (WearableToolboxClient.OPEN_TOOLBOX.consumeClick()) {
-            if (EquippedToolbox.find(minecraft.player) != null) {
-                WearableToolboxNetwork.sendToServer(new OpenToolboxPayload());
+            List<EquippedToolbox> boxes = candidateBoxes(minecraft.player);
+            if (!boxes.isEmpty()) {
+                EquippedToolbox first = boxes.get(0);
+                WearableToolboxNetwork.sendToServer(
+                        new OpenToolboxPayload(first.curioSlot(), first.inventorySlot()));
             }
         }
     }
@@ -125,35 +128,51 @@ public final class WearableToolboxClientEvents {
             return;
         }
 
-        EquippedToolbox equipped = EquippedToolbox.find(player);
         WearableToolboxConfig.Priority priority = WearableToolboxConfig.priority();
         List<ToolboxBlockEntity> nearby = ToolboxHandler.getNearest(player.level(), player, 8);
+        List<EquippedToolbox> equippedBoxes = candidateBoxes(player);
 
         switch (priority) {
             case WEARABLE -> {
-                if (equipped != null) {
+                if (!equippedBoxes.isEmpty()) {
                     suppressCreateMenu = true;
-                    WearableToolboxRadialScreen.openWearable(equipped.stack(), player);
+                    openEquipped(equippedBoxes, List.of(), player);
                 }
             }
             case PLACED -> {
-                if (equipped != null && nearby.isEmpty()) {
-                    suppressCreateMenu = true;
-                    WearableToolboxRadialScreen.openWearable(equipped.stack(), player);
-                }
-            }
-            case EQUAL -> {
-                if (equipped == null) {
+                if (!nearby.isEmpty() || equippedBoxes.isEmpty()) {
                     return;
                 }
+                suppressCreateMenu = true;
+                openEquipped(equippedBoxes, List.of(), player);
+            }
+            case EQUAL -> {
+                if (equippedBoxes.isEmpty()) {
+                    return;
+                }
+                suppressCreateMenu = true;
                 if (nearby.isEmpty()) {
-                    suppressCreateMenu = true;
-                    WearableToolboxRadialScreen.openWearable(equipped.stack(), player);
+                    openEquipped(equippedBoxes, List.of(), player);
                 } else {
-                    suppressCreateMenu = true;
-                    WearableToolboxRadialScreen.openSelection(nearby, equipped.stack(), player);
+                    openEquipped(equippedBoxes, nearby, player);
                 }
             }
+        }
+    }
+
+    private static List<EquippedToolbox> candidateBoxes(LocalPlayer player) {
+        return WearableToolboxConfig.inventoryToolboxes()
+                ? EquippedToolbox.findAllIncludingInventory(player)
+                : EquippedToolbox.findAll(player);
+    }
+
+    private static void openEquipped(List<EquippedToolbox> equippedBoxes,
+                                     List<ToolboxBlockEntity> nearby,
+                                     LocalPlayer player) {
+        if (equippedBoxes.size() == 1 && nearby.isEmpty()) {
+            WearableToolboxRadialScreen.openWearable(equippedBoxes.get(0), player);
+        } else {
+            WearableToolboxRadialScreen.openSelection(equippedBoxes, nearby, player);
         }
     }
 

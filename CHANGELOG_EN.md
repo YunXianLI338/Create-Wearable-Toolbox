@@ -2,6 +2,20 @@
 
 [中文](CHANGELOG.md)
 
+## 0.1.8 — 2026-11-05
+
+### Fixed
+
+- Fixed items put back into a toolbox being automatically refilled into the hotbar after closing the screen.
+- Fixed "deposit to all toolboxes" only handling the first worn toolbox.
+
+## 0.1.7 — 2026-11-03
+
+### Added
+
+- Multiple toolboxes can be worn in the chest slot and Curios body slots; the radial menu now asks which toolbox to use before binding.
+- Added an "open toolboxes from the inventory" option, off by default; when enabled, inventory toolboxes can also be opened with the hotkey, with a selection step for multiple toolboxes.
+
 ## 0.1.6 — 2026-11-01
 
 ### Added

@@ -21,7 +21,7 @@ public final class ClientPacketHandlers {
     public static void syncToolbox(SyncToolboxPayload payload) {
         LocalPlayer player = Minecraft.getInstance().player;
         if (player != null) {
-            EquippedToolbox.set(player, payload.curioSlot(), payload.stack());
+            EquippedToolbox.set(player, payload.curioSlot(), payload.inventorySlot(), payload.stack());
             if (player.containerMenu instanceof WearableToolboxMenu menu) {
                 menu.refreshFromStack(payload.stack());
             }

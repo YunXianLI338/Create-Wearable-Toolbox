@@ -1,6 +1,7 @@
 package com.minecart.wearabletoolbox.common;
 
 import com.minecart.wearabletoolbox.WearableToolbox;
+import com.minecart.wearabletoolbox.WearableToolboxConfig;
 import com.simibubi.create.AllBlockEntityTypes;
 import com.simibubi.create.content.equipment.toolbox.ToolboxBlock;
 import com.simibubi.create.content.equipment.toolbox.ToolboxBlockEntity;
@@ -27,6 +28,8 @@ import net.minecraftforge.items.ItemHandlerHelper;
 import net.minecraftforge.network.NetworkHooks;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -39,7 +42,9 @@ import java.util.UUID;
  */
 public class WearableToolboxMenu extends ToolboxMenu {
     private final int curioSlot;
+    private final int inventorySlot;
     private final UUID toolboxId;
+    private final Map<Integer, Integer> boundCountsAtOpen = new java.util.HashMap<>();
 
     /**
      * 客户端构造器：从网络缓冲区读取被打开的工具箱物品栈。
@@ -47,6 +52,7 @@ public class WearableToolboxMenu extends ToolboxMenu {
     public WearableToolboxMenu(int id, Inventory inventory, FriendlyByteBuf extraData) {
         super(WearableToolbox.TOOLBOX_MENU.get(), id, inventory, extraData);
         this.curioSlot = -1;
+        this.inventorySlot = -1;
         this.toolboxId = null;
     }
 
@@ -54,23 +60,35 @@ public class WearableToolboxMenu extends ToolboxMenu {
      * 服务端构造器：工具箱来自原版胸甲栏。
      */
     public WearableToolboxMenu(int id, Inventory inventory, ItemStack stack) {
-        this(id, inventory, stack, -1);
+        this(id, inventory, stack, -1, -1);
+    }
+
+    public WearableToolboxMenu(int id, Inventory inventory, ItemStack stack, int curioSlot) {
+        this(id, inventory, stack, curioSlot, -1);
     }
 
     /**
-     * 服务端构造器：curioSlot 为 -1 表示原版胸甲栏，否则是 Curios body 槽位下标。
+     * 服务端构造器：inventorySlot >= 0 表示物品栏中的工具箱。
      */
-    public WearableToolboxMenu(int id, Inventory inventory, ItemStack stack, int curioSlot) {
+    public WearableToolboxMenu(int id, Inventory inventory, ItemStack stack, int curioSlot, int inventorySlot) {
         super(WearableToolbox.TOOLBOX_MENU.get(), id, inventory,
                 createVirtualBlockEntity(stack, inventory.player));
         this.curioSlot = curioSlot;
+        this.inventorySlot = inventorySlot;
         this.toolboxId = ToolboxStorage.getId(stack);
+        if (inventory.player instanceof ServerPlayer serverPlayer && toolboxId != null) {
+            boundCountsAtOpen.putAll(WearableToolboxBindings.snapshotBoundCounts(
+                    serverPlayer, toolboxId, curioSlot, inventorySlot, ToolboxStorage.inventoryOf(contentHolder)
+            ));
+        }
     }
 
     @OnlyIn(Dist.CLIENT)
     @Override
     protected ToolboxBlockEntity createOnClient(FriendlyByteBuf extraData) {
         ItemStack stack = extraData.readItem();
+        extraData.readVarInt(); // curioSlot
+        extraData.readVarInt(); // inventorySlot
         return createVirtualBlockEntity(stack, Minecraft.getInstance().player);
     }
 
@@ -100,27 +118,37 @@ public class WearableToolboxMenu extends ToolboxMenu {
      * 打开玩家身上（胸甲栏或 Curios 胸饰栏）的工具箱。
      */
     public static void openFor(Player player) {
+        EquippedToolbox first = EquippedToolbox.find(player);
+        if (first != null) {
+            openFor(player, first.curioSlot(), first.inventorySlot());
+        }
+    }
+
+    public static void openFor(Player player, int curioSlot, int inventorySlot) {
         if (!(player instanceof ServerPlayer serverPlayer)) {
             return;
         }
 
-        EquippedToolbox equipped = EquippedToolbox.find(player);
+        EquippedToolbox equipped = EquippedToolbox.find(player, curioSlot, inventorySlot);
         if (equipped == null) {
             return;
         }
 
         ItemStack stack = equipped.stack();
         ToolboxStorage.ensureId(stack);
-        EquippedToolbox.set(player, equipped.curioSlot(), stack);
+        EquippedToolbox.set(player, equipped.curioSlot(), equipped.inventorySlot(), stack);
 
-        int curioSlot = equipped.curioSlot();
-        // 1.20.1 的 Player#openMenu 不能附带额外数据，Forge 提供 NetworkHooks.openScreen。
         NetworkHooks.openScreen(
                 serverPlayer,
                 new SimpleMenuProvider(
-                        (id, inventory, p) -> new WearableToolboxMenu(id, inventory, stack, curioSlot),
+                        (id, inventory, p) -> new WearableToolboxMenu(
+                                id, inventory, stack, equipped.curioSlot(), equipped.inventorySlot()),
                         stack.getHoverName()),
-                buffer -> buffer.writeItem(stack)
+                buffer -> {
+                    buffer.writeItem(stack);
+                    buffer.writeVarInt(equipped.curioSlot());
+                    buffer.writeVarInt(equipped.inventorySlot());
+                }
         );
     }
 
@@ -149,9 +177,9 @@ public class WearableToolboxMenu extends ToolboxMenu {
             return;
         }
 
-        ItemStack stack = curioSlot >= 0
-                ? CuriosCompat.getBody(player, curioSlot)
-                : player.getItemBySlot(EquipmentSlot.CHEST);
+        ItemStack stack = EquippedToolbox.find(player, curioSlot, inventorySlot) != null
+                ? EquippedToolbox.find(player, curioSlot, inventorySlot).stack()
+                : ItemStack.EMPTY;
         if (ToolboxItems.isToolbox(stack)) {
             writeToEquipped(contentHolder, stack);
         }
@@ -163,12 +191,11 @@ public class WearableToolboxMenu extends ToolboxMenu {
             return;
         }
 
-        ItemStack stack = curioSlot >= 0
-                ? CuriosCompat.getBody(player, curioSlot)
-                : player.getItemBySlot(EquipmentSlot.CHEST);
-        if (!ToolboxItems.isToolbox(stack)) {
+        EquippedToolbox equipped = EquippedToolbox.find(player, curioSlot, inventorySlot);
+        if (equipped == null) {
             return;
         }
+        ItemStack stack = equipped.stack();
 
         // 玩家可能在界面打开期间换掉了这个工具箱。
         UUID currentId = ToolboxStorage.getId(stack);
@@ -177,6 +204,12 @@ public class WearableToolboxMenu extends ToolboxMenu {
         }
 
         writeToEquipped(contentHolder, stack);
+        if (player instanceof ServerPlayer serverPlayer && toolboxId != null) {
+            WearableToolboxBindings.dropManualDeposits(
+                    serverPlayer, toolboxId, curioSlot, inventorySlot,
+                    ToolboxStorage.inventoryOf(contentHolder), boundCountsAtOpen
+            );
+        }
     }
 
     /**
@@ -185,9 +218,9 @@ public class WearableToolboxMenu extends ToolboxMenu {
     private void writeToEquipped(ToolboxBlockEntity contentHolder, ItemStack stack) {
         ToolboxStorage.writeInventory(stack, ToolboxStorage.inventoryOf(contentHolder));
         ToolboxStorage.ensureId(stack);
-        EquippedToolbox.set(player, curioSlot, stack);
+        EquippedToolbox.set(player, curioSlot, inventorySlot, stack);
         if (player instanceof ServerPlayer serverPlayer) {
-            WearableToolboxBindings.syncToolbox(serverPlayer, curioSlot, stack);
+            WearableToolboxBindings.syncToolbox(serverPlayer, curioSlot, inventorySlot, stack);
         }
     }
 
@@ -203,9 +236,9 @@ public class WearableToolboxMenu extends ToolboxMenu {
             // 与 Create 的 ToolboxDisposeAllPacket 一致：先解除绑定，防止 tick 又把物品补回快捷栏。
             WearableToolboxBindings.clearForDeposit(player);
 
-            ItemStack stack = menu.curioSlot >= 0
-                    ? CuriosCompat.getBody(player, menu.curioSlot)
-                    : player.getItemBySlot(EquipmentSlot.CHEST);
+            ItemStack stack = EquippedToolbox.find(player, menu.curioSlot, menu.inventorySlot) != null
+                    ? EquippedToolbox.find(player, menu.curioSlot, menu.inventorySlot).stack()
+                    : ItemStack.EMPTY;
             if (ToolboxItems.isToolbox(stack)) {
                 menu.writeToEquipped(menu.contentHolder, stack);
             }
@@ -214,24 +247,34 @@ public class WearableToolboxMenu extends ToolboxMenu {
             return;
         }
 
-        // 径向菜单没有 containerMenu，直接操作当前穿戴的工具箱物品。
-        EquippedToolbox equipped = EquippedToolbox.find(player);
-        if (equipped == null) {
+        // 径向菜单没有 containerMenu，依次操作所有可用的穿戴版工具箱。
+        List<EquippedToolbox> boxes = WearableToolboxConfig.inventoryToolboxes()
+                ? EquippedToolbox.findAllIncludingInventory(player)
+                : EquippedToolbox.findAll(player);
+        if (boxes.isEmpty()) {
             return;
         }
 
-        ItemStack stack = equipped.stack();
-        ToolboxInventory inventory = ToolboxStorage.readInventory(stack);
-        if (!depositInto(player, inventory)) {
-            return;
-        }
-        WearableToolboxBindings.clearForDeposit(player);
+        boolean changed = false;
+        for (EquippedToolbox equipped : boxes) {
+            ItemStack stack = equipped.stack();
+            ToolboxInventory inventory = ToolboxStorage.readInventory(stack);
+            if (!depositInto(player, inventory)) {
+                continue;
+            }
 
-        ToolboxStorage.writeInventory(stack, inventory);
-        ToolboxStorage.ensureId(stack);
-        EquippedToolbox.set(player, equipped.curioSlot(), stack);
-        WearableToolboxBindings.syncToolbox(player, equipped.curioSlot(), stack);
-        player.getInventory().setChanged();
+            ToolboxStorage.writeInventory(stack, inventory);
+            ToolboxStorage.ensureId(stack);
+            EquippedToolbox.set(player, equipped.curioSlot(), equipped.inventorySlot(), stack);
+            WearableToolboxBindings.syncToolbox(
+                    player, equipped.curioSlot(), equipped.inventorySlot(), stack);
+            changed = true;
+        }
+
+        if (changed) {
+            WearableToolboxBindings.clearForDeposit(player);
+            player.getInventory().setChanged();
+        }
     }
 
     private static boolean depositInto(ServerPlayer player, ToolboxInventory inventory) {

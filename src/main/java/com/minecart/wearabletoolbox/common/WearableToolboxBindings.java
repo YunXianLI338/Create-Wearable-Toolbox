@@ -12,7 +12,9 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.items.ItemHandlerHelper;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -30,8 +32,25 @@ public final class WearableToolboxBindings {
     public static final String DATA_KEY = "WearableToolboxData";
     private static final String TOOLBOX_KEY = "Toolbox";
     private static final String SLOT_KEY = "Slot";
+    private static final String CURIO_KEY = "Curio";
+    private static final String INVENTORY_KEY = "Inventory";
 
     private WearableToolboxBindings() {
+    }
+
+    private static UUID entryUuid(CompoundTag root, String key) {
+        CompoundTag entry = root.getCompound(key);
+        return entry.contains(TOOLBOX_KEY) ? entry.getUUID(TOOLBOX_KEY) : root.getUUID(TOOLBOX_KEY);
+    }
+
+    private static int entryCurio(CompoundTag root, String key) {
+        CompoundTag entry = root.getCompound(key);
+        return entry.contains(CURIO_KEY) ? entry.getInt(CURIO_KEY) : -1;
+    }
+
+    private static int entryInventory(CompoundTag root, String key) {
+        CompoundTag entry = root.getCompound(key);
+        return entry.contains(INVENTORY_KEY) ? entry.getInt(INVENTORY_KEY) : -1;
     }
 
     private static CompoundTag root(ServerPlayer player) {
@@ -72,8 +91,8 @@ public final class WearableToolboxBindings {
      * <p>胸甲栏的物品数据不一定立刻同步给玩家自己，径向菜单读取本地物品栈时会看到旧库存，
      * 导致“隔间已空但图标仍是亮的”。</p>
      */
-    public static void syncToolbox(ServerPlayer player, int curioSlot, ItemStack stack) {
-        WearableToolboxNetwork.sendToPlayer(player, new SyncToolboxPayload(stack.copy(), curioSlot));
+    public static void syncToolbox(ServerPlayer player, int curioSlot, int inventorySlot, ItemStack stack) {
+        WearableToolboxNetwork.sendToPlayer(player, new SyncToolboxPayload(stack.copy(), curioSlot, inventorySlot));
     }
 
     /**
@@ -112,12 +131,12 @@ public final class WearableToolboxBindings {
     /**
      * 绑定一个隔间到快捷栏。手上物品与目标过滤器不匹配时先收进工具箱，之后由 tick 补充/回收。
      */
-    public static void bind(ServerPlayer player, int hotbarSlot, int compartment) {
+    public static void bind(ServerPlayer player, int hotbarSlot, int compartment, int curioSlot, int inventorySlot) {
         if (hotbarSlot < 0 || hotbarSlot >= Inventory.getSelectionSize() || compartment < 0 || compartment >= 8) {
             return;
         }
 
-        EquippedToolbox equipped = EquippedToolbox.find(player);
+        EquippedToolbox equipped = EquippedToolbox.find(player, curioSlot, inventorySlot);
         if (equipped == null) {
             return;
         }
@@ -139,7 +158,7 @@ public final class WearableToolboxBindings {
         // 与 Create 的 ToolboxEquipPacket 一致：先解除该快捷栏的旧绑定，再处理手上物品。
         unbind(player, hotbarSlot, false);
 
-        equipped = EquippedToolbox.find(player);
+        equipped = EquippedToolbox.find(player, curioSlot, inventorySlot);
         if (equipped == null) {
             return;
         }
@@ -167,8 +186,8 @@ public final class WearableToolboxBindings {
                 player.getInventory().setChanged();
                 ToolboxStorage.writeInventory(toolbox, inventory);
                 ToolboxStorage.ensureId(toolbox);
-                EquippedToolbox.set(player, equipped.curioSlot(), toolbox);
-                syncToolbox(player, equipped.curioSlot(), toolbox);
+                EquippedToolbox.set(player, equipped.curioSlot(), equipped.inventorySlot(), toolbox);
+                syncToolbox(player, equipped.curioSlot(), equipped.inventorySlot(), toolbox);
             }
         }
 
@@ -177,14 +196,17 @@ public final class WearableToolboxBindings {
         CompoundTag root = root(player);
         root.putUUID(TOOLBOX_KEY, id);
         CompoundTag entry = new CompoundTag();
+        entry.putUUID(TOOLBOX_KEY, id);
         entry.putInt(SLOT_KEY, compartment);
+        entry.putInt(CURIO_KEY, equipped.curioSlot());
+        entry.putInt(INVENTORY_KEY, equipped.inventorySlot());
         root.put(String.valueOf(hotbarSlot), entry);
         saveRoot(player, root);
         // 快捷栏边框由客户端读取持久化数据绘制，绑定变化后立即同步。
         syncData(player);
 
-        EquippedToolbox.set(player, equipped.curioSlot(), toolbox);
-        syncToolbox(player, equipped.curioSlot(), toolbox);
+        EquippedToolbox.set(player, equipped.curioSlot(), equipped.inventorySlot(), toolbox);
+        syncToolbox(player, equipped.curioSlot(), equipped.inventorySlot(), toolbox);
         player.displayClientMessage(
                 Component.translatable("message.wearable_toolbox.bound", filters.get(compartment).getHoverName())
                         .withStyle(ChatFormatting.GREEN),
@@ -214,10 +236,14 @@ public final class WearableToolboxBindings {
         }
 
         int compartment = root.getCompound(key).getInt(SLOT_KEY);
+        int curioSlot = entryCurio(root, key);
+        int inventorySlot = entryInventory(root, key);
+        UUID boundId = entryUuid(root, key);
         root.remove(key);
 
-        EquippedToolbox equipped = EquippedToolbox.find(player);
-        if (equipped != null) {
+        EquippedToolbox equipped = EquippedToolbox.find(player, curioSlot, inventorySlot);
+        if (equipped != null && boundId != null
+                && boundId.equals(ToolboxStorage.ensureId(equipped.stack()))) {
             ItemStack toolbox = equipped.stack();
             ToolboxInventory inventory = ToolboxStorage.readInventory(toolbox);
             if (compartment >= 0 && compartment < 8) {
@@ -233,8 +259,8 @@ public final class WearableToolboxBindings {
 
                 ToolboxStorage.writeInventory(toolbox, inventory);
                 ToolboxStorage.ensureId(toolbox);
-                EquippedToolbox.set(player, equipped.curioSlot(), toolbox);
-                syncToolbox(player, equipped.curioSlot(), toolbox);
+                EquippedToolbox.set(player, equipped.curioSlot(), equipped.inventorySlot(), toolbox);
+                syncToolbox(player, equipped.curioSlot(), equipped.inventorySlot(), toolbox);
             }
         }
 
@@ -249,27 +275,11 @@ public final class WearableToolboxBindings {
     }
 
     /**
-     * 每 tick 由服务端调用：校验绑定并按 Create 的规则补充/回收快捷栏物品。
+     * 每 tick 由服务端调用：按每个快捷栏自己的来源工具箱校验并按 Create 的规则补充/回收。
      */
     public static void tick(ServerPlayer player) {
         CompoundTag root = root(player);
         if (root.isEmpty()) {
-            return;
-        }
-
-        EquippedToolbox equipped = EquippedToolbox.find(player);
-        if (equipped == null) {
-            player.getPersistentData().remove(DATA_KEY);
-            syncData(player);
-            return;
-        }
-
-        ItemStack toolbox = equipped.stack();
-        UUID id = ToolboxStorage.getId(toolbox);
-        if (id == null || !id.equals(root.getUUID(TOOLBOX_KEY))) {
-            // 装备槽换成了另一个工具箱（或物品丢失了 UUID），旧绑定失效。
-            player.getPersistentData().remove(DATA_KEY);
-            syncData(player);
             return;
         }
 
@@ -278,10 +288,7 @@ public final class WearableToolboxBindings {
             return;
         }
 
-        ToolboxInventory inventory = ToolboxStorage.readInventory(toolbox);
-        List<ItemStack> filters = filters(inventory);
         Inventory playerInventory = player.getInventory();
-        boolean inventoryChanged = false;
         boolean rootChanged = false;
 
         for (int hotbarSlot = 0; hotbarSlot < Inventory.getSelectionSize(); hotbarSlot++) {
@@ -291,7 +298,26 @@ public final class WearableToolboxBindings {
             }
 
             int compartment = root.getCompound(key).getInt(SLOT_KEY);
-            if (compartment < 0 || compartment >= 8 || compartment >= filters.size()) {
+            int curioSlot = entryCurio(root, key);
+            int inventorySlot = entryInventory(root, key);
+            UUID boundId = entryUuid(root, key);
+            if (compartment < 0 || compartment >= 8 || boundId == null) {
+                root.remove(key);
+                rootChanged = true;
+                continue;
+            }
+
+            EquippedToolbox equipped = EquippedToolbox.find(player, curioSlot, inventorySlot);
+            if (equipped == null || !boundId.equals(ToolboxStorage.ensureId(equipped.stack()))) {
+                root.remove(key);
+                rootChanged = true;
+                continue;
+            }
+
+            ItemStack toolbox = equipped.stack();
+            ToolboxInventory inventory = ToolboxStorage.readInventory(toolbox);
+            List<ItemStack> filters = filters(inventory);
+            if (compartment >= filters.size()) {
                 root.remove(key);
                 rootChanged = true;
                 continue;
@@ -312,6 +338,7 @@ public final class WearableToolboxBindings {
                 continue;
             }
 
+            boolean changed = false;
             int target = (filter.getMaxStackSize() + 1) / 2;
             int count = current.getCount();
             if (count < target) {
@@ -319,7 +346,7 @@ public final class WearableToolboxBindings {
                 if (!extracted.isEmpty()) {
                     ItemStack template = current.isEmpty() ? extracted : current;
                     playerInventory.setItem(hotbarSlot, template.copyWithCount(count + extracted.getCount()));
-                    inventoryChanged = true;
+                    changed = true;
                 }
             } else if (count > target) {
                 int amount = count - target;
@@ -327,8 +354,16 @@ public final class WearableToolboxBindings {
                 int deposited = amount - inventory.distributeToCompartment(toInsert, compartment, false).getCount();
                 if (deposited > 0) {
                     playerInventory.setItem(hotbarSlot, current.copyWithCount(count - deposited));
-                    inventoryChanged = true;
+                    changed = true;
                 }
+            }
+
+            if (changed) {
+                ToolboxStorage.writeInventory(toolbox, inventory);
+                ToolboxStorage.ensureId(toolbox);
+                EquippedToolbox.set(player, curioSlot, inventorySlot, toolbox);
+                syncToolbox(player, curioSlot, inventorySlot, toolbox);
+                playerInventory.setChanged();
             }
         }
 
@@ -336,13 +371,61 @@ public final class WearableToolboxBindings {
             saveRoot(player, root);
             syncData(player);
         }
-        if (inventoryChanged) {
-            ToolboxStorage.writeInventory(toolbox, inventory);
-            ToolboxStorage.ensureId(toolbox);
-            EquippedToolbox.set(player, equipped.curioSlot(), toolbox);
-            syncToolbox(player, equipped.curioSlot(), toolbox);
-            playerInventory.setChanged();
+    }
+
+    public static Map<Integer, Integer> snapshotBoundCounts(ServerPlayer player, UUID toolboxId, int curioSlot, int inventorySlot, ToolboxInventory inventory) {
+        Map<Integer, Integer> counts = new HashMap<>();
+        CompoundTag root = root(player);
+        for (int hotbarSlot = 0; hotbarSlot < Inventory.getSelectionSize(); hotbarSlot++) {
+            String key = String.valueOf(hotbarSlot);
+            if (!root.contains(key) || !toolboxId.equals(entryUuid(root, key))) {
+                continue;
+            }
+            if (entryCurio(root, key) != curioSlot || entryInventory(root, key) != inventorySlot) {
+                continue;
+            }
+            int compartment = root.getCompound(key).getInt(SLOT_KEY);
+            counts.put(hotbarSlot, countCompartment(inventory, compartment));
         }
+        return counts;
+    }
+
+    public static void dropManualDeposits(ServerPlayer player, UUID toolboxId, int curioSlot, int inventorySlot,
+                                          ToolboxInventory inventory, Map<Integer, Integer> before) {
+        if (before.isEmpty()) {
+            return;
+        }
+        CompoundTag root = root(player);
+        boolean changed = false;
+        for (Map.Entry<Integer, Integer> e : before.entrySet()) {
+            String key = String.valueOf(e.getKey());
+            if (!root.contains(key) || !toolboxId.equals(entryUuid(root, key))) {
+                continue;
+            }
+            if (entryCurio(root, key) != curioSlot || entryInventory(root, key) != inventorySlot) {
+                continue;
+            }
+            int compartment = root.getCompound(key).getInt(SLOT_KEY);
+            if (countCompartment(inventory, compartment) > e.getValue()) {
+                root.remove(key);
+                changed = true;
+            }
+        }
+        if (changed) {
+            saveRoot(player, root);
+            syncData(player);
+        }
+    }
+
+    private static int countCompartment(ToolboxInventory inventory, int compartment) {
+        if (compartment < 0 || compartment >= 8) {
+            return 0;
+        }
+        int count = 0;
+        for (int i = 0; i < ToolboxInventory.STACKS_PER_COMPARTMENT; i++) {
+            count += inventory.getStackInSlot(compartment * ToolboxInventory.STACKS_PER_COMPARTMENT + i).getCount();
+        }
+        return count;
     }
 
     private static List<ItemStack> filters(ToolboxInventory inventory) {

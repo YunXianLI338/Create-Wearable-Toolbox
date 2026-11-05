@@ -39,7 +39,7 @@ public final class WearableToolboxNetwork {
                 .consumerMainThread((message, context) -> {
                     ServerPlayer player = context.get().getSender();
                     if (player != null) {
-                        WearableToolboxMenu.openFor(player);
+                        WearableToolboxMenu.openFor(player, message.curioSlot(), message.inventorySlot());
                     }
                     context.get().setPacketHandled(true);
                 })

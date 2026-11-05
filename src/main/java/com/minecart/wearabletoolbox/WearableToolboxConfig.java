@@ -19,6 +19,10 @@ public final class WearableToolboxConfig {
             .comment("打开可穿戴工具箱界面时，是否让本地玩家朝身体正前方低头。")
             .define("lower_head", true);
 
+    public static final ForgeConfigSpec.BooleanValue INVENTORY_TOOLBOXES = BUILDER
+            .comment("允许物品栏中未穿戴的工具箱也用快捷键打开，多个工具箱时先选择。")
+            .define("inventory_toolboxes", false);
+
     public static final ForgeConfigSpec.EnumValue<Priority> TOOLBOX_PRIORITY = BUILDER
             .comment("按 Alt 打开径向菜单时，身上工具箱与周围放置工具箱的选择方式。")
             .defineEnum("toolbox_priority", Priority.EQUAL);
@@ -44,5 +48,9 @@ public final class WearableToolboxConfig {
 
     public static boolean lowerHead() {
         return LOWER_HEAD.get();
+    }
+
+    public static boolean inventoryToolboxes() {
+        return INVENTORY_TOOLBOXES.get();
     }
 }

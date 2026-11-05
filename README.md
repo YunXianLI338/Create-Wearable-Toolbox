@@ -52,11 +52,13 @@
 pose_arms = true
 lower_head = true
 toolbox_priority = "EQUAL"
+inventory_toolboxes = false
 ```
 
 - `pose_arms`：打开穿戴版工具箱界面时，玩家双臂向前伸出。
 - `lower_head`：打开穿戴版工具箱界面时，玩家朝身体正前方低头。
 - `toolbox_priority`：`EQUAL` 时穿戴版与周围放置版一起进入选择界面；`WEARABLE` 只打开穿戴版；`PLACED` 周围有放置版时只打开放置版。
+- `inventory_toolboxes`：是否允许物品栏中未穿戴的工具箱也用快捷键打开，默认关闭。
 
 两个姿势选项互不影响，设为 `false` 即可关闭对应动作。动作与开盖模型会同步给附近玩家；配置只控制手臂与低头动作是否渲染。
 
@@ -83,7 +85,7 @@ gradlew.bat runData
 ./gradlew build
 ```
 
-- 构建产物：`build/libs/wearable_toolbox-1.20.1-0.1.6.jar`，放入客户端 `mods/` 即可。
+- 构建产物：`build/libs/wearable_toolbox-1.20.1-0.1.8.jar`，放入客户端 `mods/` 即可。
 - `libs/maven` 是本地预置依赖仓库（构建时优先命中，缺失时自动回落远程仓库）。网络慢时可先用浏览器或 `curl` 把依赖 jar 放进 `libs/maven/<group>/<artifact>/<version>/`，并在同目录手写一个 `<packaging>jar</packaging>` 的最小 pom。该目录不进版本库。
 - 首次构建会下载 Forge MDK 并执行反编译（ForgeGradle 的 `setup` 阶段），耗时较长；日志暂时没有输出并不代表卡死。
 - `runClient` / `runServer` 不需要手动往 `run/mods` 放前置：Create、Ponder、Flywheel、Registrate 以 `implementation` + `fg.deobf` 声明，ForgeGradle 会把它们（已重映射为 official 名）放进开发运行时的 classpath，FML 在开发环境从 classpath 发现模组。若想测试 Curios，把它也加成 `runtimeOnly fg.deobf(...)`，或直接把 jar 丢进 `run/mods/`。
