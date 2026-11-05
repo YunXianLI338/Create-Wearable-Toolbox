@@ -50,7 +50,7 @@
 			"rotation": {"angle": -22.5, "axis": "z", "origin": [9, 8, 7]},
 			"faces": {
 				"north": {"uv": [6, 10.5, 10, 11.5], "texture": "#0"},
-				"south": {"uv": [6, 10.5, 10, 11.5], "texture": "#0"}
+				"south": {"uv": [10, 10.5, 6, 11.5], "texture": "#0"}
 			}
 		},
 		{
