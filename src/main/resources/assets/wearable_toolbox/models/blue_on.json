@@ -1,0 +1,6 @@
+{
+  "parent": "wearable_toolbox:models/brown_on",
+  "textures": {
+    "0": "create:block/toolbox/blue"
+  }
+}
