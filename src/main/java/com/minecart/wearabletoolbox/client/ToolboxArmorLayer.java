@@ -23,9 +23,12 @@ import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.client.resources.model.ModelState;
+import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.DyeColor;
 
 import javax.annotation.Nullable;
@@ -86,6 +89,7 @@ public final class ToolboxArmorLayer extends RenderLayer<AbstractClientPlayer, P
 
     /** 每种颜色的打开模型缓存。 */
     private static final Map<DyeColor, List<BakedQuad>> OPEN_QUADS = new EnumMap<>(DyeColor.class);
+    private static List<BakedQuad> missingQuads;
 
     public ToolboxArmorLayer(RenderLayerParent<AbstractClientPlayer, PlayerModel<AbstractClientPlayer>> parent) {
         super(parent);
@@ -155,6 +159,12 @@ public final class ToolboxArmorLayer extends RenderLayer<AbstractClientPlayer, P
         return ToolboxPoseState.isClientPosing(player.getUUID());
     }
 
+    public static void clearCache() {
+        NORMAL_QUADS.clear();
+        OPEN_QUADS.clear();
+        missingQuads = null;
+    }
+
     private static List<BakedQuad> getQuads(boolean open, @Nullable DyeColor color) {
         DyeColor key = color == null ? DyeColor.BROWN : color;
         Map<DyeColor, List<BakedQuad>> cache = open ? OPEN_QUADS : NORMAL_QUADS;
@@ -167,12 +177,26 @@ public final class ToolboxArmorLayer extends RenderLayer<AbstractClientPlayer, P
                 "models/" + color.getSerializedName() + (open ? "_on" : "")
         );
         List<BakedQuad> quads = loadModelQuads(preferred, color, false);
-        if (!quads.isEmpty() || color == DyeColor.BROWN) {
+        if (!quads.isEmpty()) {
             return quads;
         }
 
-        // 自定义模型缺失时退回棕色模型，并继续用对应颜色的方块贴图。
-        return loadModelQuads(open ? BROWN_OPEN_MODEL : BROWN_MODEL, color, true);
+        // 子模型被资源包删除/覆盖时，按原版缺模型显示紫黑块，而不是偷偷回退到棕色模型。
+        return getMissingQuads();
+    }
+
+    private static List<BakedQuad> getMissingQuads() {
+        if (missingQuads == null) {
+            BakedModel missing = Minecraft.getInstance().getModelManager().getMissingModel();
+            List<BakedQuad> quads = new ArrayList<>();
+            RandomSource random = RandomSource.create(42L);
+            for (Direction direction : Direction.values()) {
+                quads.addAll(missing.getQuads(null, direction, random));
+            }
+            quads.addAll(missing.getQuads(null, null, random));
+            missingQuads = List.copyOf(quads);
+        }
+        return missingQuads;
     }
 
     private static List<BakedQuad> loadModelQuads(ResourceLocation location, DyeColor color, boolean forceColorTexture) {

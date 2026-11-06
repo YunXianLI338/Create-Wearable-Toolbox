@@ -9,6 +9,8 @@
 - Fixed having to click a toolbox and then click again after choosing it from the V-key toolbox selection screen.
 - Fixed items put back into a toolbox being automatically refilled into the hotbar after closing the screen.
 - Fixed "deposit to all toolboxes" only handling the first worn toolbox.
+- Fixed deleted color submodels still falling back to the brown model.
+- Fixed model caches not refreshing after a resource reload, which required restarting the client.
 
 ## 0.1.7 — 2026-11-03
 
