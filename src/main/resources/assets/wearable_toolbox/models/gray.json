@@ -1,5 +1,5 @@
 {
-  "parent": "wearable_toolbox:models/brown",
+  "parent": "wearable_toolbox:brown",
   "textures": {
     "0": "create:block/toolbox/gray"
   }
