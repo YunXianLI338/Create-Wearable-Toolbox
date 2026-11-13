@@ -235,10 +235,20 @@ public final class ToolboxArmorLayer extends RenderLayer<AbstractClientPlayer, P
     }
 
     /**
+     * 原版 {@code parent} 写的是模型命名空间下的相对路径（例如 {@code wearable_toolbox:brown}
+     * 对应 {@code models/brown.json}）；这里统一补上 {@code models/}，同时兼容旧写法
+     * {@code wearable_toolbox:models/brown}。
+     */
+    private static ResourceLocation withModelsPrefix(ResourceLocation location) {
+        return location.withPath(path -> path.startsWith("models/") ? path : "models/" + path);
+    }
+
+    /**
      * 读取模型并解析 {@code parent} 链；子模型可以只声明 parent + 覆盖 textures。
      */
     @Nullable
     private static String resolveModelJson(ResourceLocation location, Set<ResourceLocation> visited) {
+        location = withModelsPrefix(location);
         if (!visited.add(location)) {
             return null;
         }
