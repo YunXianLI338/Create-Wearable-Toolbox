@@ -2,6 +2,12 @@
 
 [中文](CHANGELOG.md)
 
+## 0.1.9 — 2026-11-13
+
+### Added
+
+- When multiple toolboxes are equipped, the first visible curio-slot toolbox is rendered; if all are hidden, the chest-slot toolbox is used.
+
 ## 0.1.8 — 2026-11-05
 
 ### Fixed

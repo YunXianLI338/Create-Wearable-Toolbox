@@ -99,7 +99,7 @@ public final class ToolboxArmorLayer extends RenderLayer<AbstractClientPlayer, P
     public void render(PoseStack poseStack, MultiBufferSource buffer, int packedLight, AbstractClientPlayer player,
                        float limbSwing, float limbSwingAmount, float partialTick, float ageInTicks,
                        float netHeadYaw, float headPitch) {
-        EquippedToolbox equipped = EquippedToolbox.find(player);
+        EquippedToolbox equipped = EquippedToolbox.findForRender(player);
         if (equipped == null || !equipped.isVisibleOn(player)) {
             return;
         }
