@@ -36,6 +36,24 @@ public record EquippedToolbox(ItemStack stack, int curioSlot, int inventorySlot)
         return !isInventory() && (!isCurio() || CuriosCompat.isBodySlotVisible(player, curioSlot));
     }
 
+    /**
+     * 玩家身上用于渲染的工具箱：优先按槽位顺序取第一个未隐藏的 Curios body 工具箱；
+     * 没有可见饰品栏工具箱时再退回胸甲栏。
+     */
+    @Nullable
+    public static EquippedToolbox findForRender(Player player) {
+        if (ModList.get().isLoaded("curios")) {
+            for (EquippedToolbox curio : CuriosCompat.findAllBodies(player)) {
+                if (curio.isVisibleOn(player)) {
+                    return curio;
+                }
+            }
+        }
+
+        ItemStack chest = player.getItemBySlot(EquipmentSlot.CHEST);
+        return ToolboxItems.isToolbox(chest) ? new EquippedToolbox(chest, -1) : null;
+    }
+
     @Nullable
     public static EquippedToolbox find(Player player) {
         List<EquippedToolbox> all = findAll(player);
